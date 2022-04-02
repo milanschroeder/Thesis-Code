@@ -6,6 +6,6 @@
 ### Contents:
 
 - 01_scraping_sources.R
-  - loads and converts newspaper articles from the Factiva Database and FAZ archive
-  - aims to scrape articles by published by RT Deutsch from the Internet Archive (IA)
+  - (loads and converts newspaper articles from the Factiva Database and FAZ archive)
+  - scrapes all articles by published by RT Deutsch in 2021
   - plans to load time-series of aggregated polling data of the 2021 German federal election from zweitstimme.org
