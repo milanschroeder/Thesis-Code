@@ -1,5 +1,6 @@
 # 01 Scraping Sources
 
+## load packages ####
 library(pacman)
 p_load(tidyverse)
 p_load(magrittr)
@@ -54,38 +55,52 @@ URL = RT_URLS[1]
 )
 ### by search queries directly from RT ####
 
-# all articles (or at least 13620 in 2021) have badge "Mehr zum Thema", that appaers in search:
 
-# get week intervals (cause that is approximately how many articles can be loaded)
-library(lubridate)
-p_load(RSelenium)
+## create general (basic) function to scrape RT DE: ####
+scrapeRT <- function(startdate = startdate, 
+                     period_end = period_end, 
+                     keyword = "mehr",
+                     interval_length = 2
+                     ){
 
-system("taskkill /im java.exe /f", intern=FALSE, ignore.stdout=FALSE)
-rD <- rsDriver(browser = "chrome",
-               chromever = "99.0.4844.51",
-               verbose = F)
-remDr <- rD[["client"]]
+ # ToDO: Check input
+  # startdate & period_end may be anything convertable by lubridate::dmy(), e.g. a string in the format "dd-mm-yyyy"
+  # keyword is not case sensitive (what about special characters?)
+  # intervall length must be (convertable to) an integer (else: use default)
+  
+  # load required packages
+  # ToDO: add installer and check 
+  library(lubridate)
+  library(RSelenium)
+  library(rlist)
+  library(rvest)
+  
+  # start Remote Driver:
+  system("taskkill /im java.exe /f", intern=FALSE, ignore.stdout=TRUE, show.output.on.console = F)
+  rD <- rsDriver(browser = "chrome",
+                 chromever = "99.0.4844.51",
+                 verbose = F)
+  remDr <- rD[["client"]]
+  
+  # be careful not to get blocked:
+    # probably better don't include this as an option(?)
+  sleepmin = 1
+  sleepmax = 3
+  max_attempts = 3
+  
+  # ToDo: only if option (still missing) named == T
+  list_names <- c()
+  
+  # create empty list to write to 
+    # ToDo: empty xml nodeset would be better (select format option?)
+  links_RT_search <- list()
+  startdate = lubridate::dmy(startdate)
+  enddate <- startdate %>%  
+    add_with_rollback(., days(interval_length))
 
-# i = 0
-# be careful not to get blocked:
-sleepmin = 1
-sleepmax = 3
-# max_clicks <- 50
-max_attempts <- 3
-# rt_pages <- vector("list", total_pages)
-list_names <- c()
-
-# create an empty xml nodeset:
-# starts as list of 108, duplicates will be deleted later
-# links_RT_search <- read_html(html_search) %>% html_elements(., ".HeaderNews-type_5 .Link-isFullCard")
-links_RT_search <- list()
-
-enddate <- lubridate::dmy("31-12-2021") 
-startdate <- lubridate::dmy("24-12-2021")
-
-while (enddate > dmy("31-12-2020")) {
-  # loop over search URLs by week:
-  search <- paste0("https://de.rt.com/search?q=mehr&df=", startdate, "&dt=", enddate)  
+while (enddate > dmy(period_end)) {
+  # loop over search URLs by time intervall:
+  search <- paste0("https://de.rt.com/search?q=", keyword ,"&df=", startdate, "&dt=", enddate)  
 
   ### everything else in between:
   remDr$navigate(search)
@@ -125,47 +140,64 @@ while (enddate > dmy("31-12-2020")) {
       if (pages_source == pages_source_compare){
         attempts = max_attempts
       }
-      # try(webElem2$clickElement())
-      # webElem3 <- tryCatch({remDr$findElement(using = "xpath", "/html/body/div[1]/main/div/section/div[1]/div[5]/div[2]/div/div/button")},
-      #                     error = function(e){})
-      # try(webElem3$clickElement())
-      # 
-      # sleep long to avoid blocking
+     
+      # sleep to avoid blocking
       randsleep <- sample(seq(sleepmin, sleepmax, by = 0.001), 1)
       Sys.sleep(randsleep)
-      attempts <- attempts + 1
+      
+      attempts = attempts + 1
       
     }
     
-    # now as while-loop
-    # if (attempts == max_attempts) {
-    #   break
-    #   }
   }
-  
   
   # save and overwrite with every loop, in case sth breaks
   html_search <- remDr$getPageSource()[[1]]
   # print(paste("search page successfully saved after", i, " clicks"))
   
-
-  # safe list of links per week:
-  new_links <- read_html(html_search) %>% html_elements(., ".HeaderNews-type_5 .Link-isFullCard")
+  # safe list of links per intervall:
+  new_links <- read_html(html_search) %>% 
+    html_elements(., ".HeaderNews-type_5 .Link-isFullCard")
   links_RT_search <- list.append(links_RT_search, new_links)
   
   # prepare vector with list names:
-  list_name <- (paste0("week",startdate,"-",enddate))
+  list_name <- paste0("week",startdate,"-",enddate)
   list_names <- append(list_names, list_name)
   
+  # ToDo: add option to suppress output: 
   print(paste("period", startdate, "to", enddate, "completed."))
   
-  # go one week back
-enddate <- enddate %>%  add_with_rollback(., weeks(-1))
-startdate <- startdate %>%  add_with_rollback(., weeks(-1))
+  # go back one period
+enddate <- enddate %>% 
+  add_with_rollback(., days(intervall_length))
+startdate <- startdate %>% 
+  add_with_rollback(., days(intervall_length))
+
+# ToDo: add option to suppress output: 
 print(paste("period is now", startdate, "to", enddate))
 }
-
+  
+# ToDo: opt in option for named list
 names(links_RT_search) <- list_names
+
+# ToDo: add option to select format (df, list, xml_nodeset, ...)
+
+# ToDo: add option to convert to full dataset(?)
+  # by calling junctions get_pages_RT and extract_variables_rt, so can also be done in multiple steps with additional options (default)
+
+return(links_RT_search)
+}
+
+### apply function ####
+
+# set parameter:
+  # select startdate (here: 01 Jan 2021)
+  startdate <- "01-01-2021" 
+  # select time interval (here: 2 to keep it as small as possible)
+  period_end <- "31-12-2021"
+  # keyword & interval as default
+
+links_RT_search <- scrapeRT(startdate, period_end)
 
 # save list:
 library(rlist)
@@ -289,7 +321,11 @@ data_RT %<>% left_join(., links_RT, by = c("link" = "links_full"))
 
 # save dataset
 write_csv(data_RT, 'Articles/data_rt.csv')
-rio::export(data_RT, "articles/data_rt.rds")
+rio::export(data_RT, "Articles/data_rt.rds")
+
+# import again:
+data_RT1 <- rio::import("articles/data_rt.rds")
+data_RT2 <- rio::import("articles/data_rt.csv") # seems preferable, but larger
 
 
 # ToDo:
