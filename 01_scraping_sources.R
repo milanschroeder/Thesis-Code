@@ -820,11 +820,11 @@ results_factiva_all <- list()
 results_factiva_all_txt <- c()
 
   repair = 1 
-  repair_i <- 4
+  repair_i <- 5
   
   for (i in repair_i:length(newspaper)){
     # in case of error, manually finish inner loop run and set repair to next k to proceed
-    if (i != 4) {repair = 1} # delete later (or change condition to: i != i[where error happened])
+    # if (i != 5) {repair = 1} # delete later (or change condition to: i != i[where error happened])
       for (k in repair:length(dates)){
         
         query <- paste0("la=de and rst=", newspaper[i], " and date from ", dates[k])
@@ -946,7 +946,8 @@ results_factiva_all_txt <- c()
         results_factiva_all <- list.append(results_factiva_all, page)
         
         
-        
+# run manually if loop broke, then set repair and start full loop again  
+      {
         # test if there are more results:
           # ToDo: find out why it sometimes breaks here!
         more <- tryCatch({remDr$findElement("css selector", ".nextItem")},
@@ -977,6 +978,7 @@ results_factiva_all_txt <- c()
           if(purrr::is_empty(more) | is.null(more)){ 
             more <-  NULL}
           more <- more[[1]]
+        }
         }
       }
     }
