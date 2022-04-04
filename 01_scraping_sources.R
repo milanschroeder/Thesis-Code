@@ -60,8 +60,7 @@ URL = RT_URLS[1]
 scrapeRT <- function(startdate = startdate, 
                      period_end = period_end, 
                      keyword = "mehr",
-                     interval_length = 2
-                     ){
+                     interval_length = 2){
 
  # ToDO: Check input
   # startdate & period_end may be anything convertable by lubridate::dmy(), e.g. a string in the format "dd-mm-yyyy"
@@ -74,12 +73,13 @@ scrapeRT <- function(startdate = startdate,
   library(RSelenium)
   library(rlist)
   library(rvest)
-  
+
   # start Remote Driver:
   system("taskkill /im java.exe /f", intern=FALSE, ignore.stdout=TRUE, show.output.on.console = F)
   rD <- rsDriver(browser = "chrome",
                  chromever = "99.0.4844.51",
-                 verbose = F)
+                 verbose = F,
+                 port = port)
   remDr <- rD[["client"]]
   
   # be careful not to get blocked:
@@ -98,7 +98,7 @@ scrapeRT <- function(startdate = startdate,
   enddate <- startdate %>%  
     add_with_rollback(., days(interval_length))
 
-while (enddate > dmy(period_end)) {
+while (enddate < dmy(period_end)) {
   # loop over search URLs by time intervall:
   search <- paste0("https://de.rt.com/search?q=", keyword ,"&df=", startdate, "&dt=", enddate)  
 
@@ -152,11 +152,14 @@ while (enddate > dmy(period_end)) {
   }
   
   # save and overwrite with every loop, in case sth breaks
-  html_search <- remDr$getPageSource()[[1]]
+# ToDo: test if this works within new_links assignment pipe as well
+  # html_search <- remDr$getPageSource()[[1]] 
+  
   # print(paste("search page successfully saved after", i, " clicks"))
   
   # safe list of links per intervall:
-  new_links <- read_html(html_search) %>% 
+  new_links <- remDr$getPageSource()[[1]] %>% 
+    read_html() %>% 
     html_elements(., ".HeaderNews-type_5 .Link-isFullCard")
   links_RT_search <- list.append(links_RT_search, new_links)
   
@@ -189,6 +192,11 @@ return(links_RT_search)
 }
 
 ### apply function ####
+links_RT_search <- scrapeRT(startdate, period_end)
+
+# save list:
+library(rlist)
+rlist::list.save(links_RT_search, 'Articles/rt_links.rds')
 
 # set parameter:
   # select startdate (here: 01 Jan 2021)
@@ -197,11 +205,6 @@ return(links_RT_search)
   period_end <- "31-12-2021"
   # keyword & interval as default
 
-links_RT_search <- scrapeRT(startdate, period_end)
-
-# save list:
-library(rlist)
-rlist::list.save(links_RT_search, 'Articles/rt_links.rds')
 
 identical(links_RT_search, 'Articles/rt_links.rds')
 # saved 02/04/2022 19:00
@@ -581,6 +584,216 @@ for (i in 1:length(candidate)){
 
 
 
+## Due to Factiva download limit, just scrape search summaries: ####
+# crucial issue: blocked by library service!
+# start RD:
+system("taskkill /im java.exe /f", intern=FALSE, ignore.stdout=FALSE)
+rD <- rsDriver(browser = "chrome",
+               chromever = "99.0.4844.51",
+               verbose = F,
+               javascript = T,
+               nativeEvents = T,
+               extraCapabilities = eCap)
+remDr <- rD[["client"]]
+
+# remDr$navigate("https://global-1factiva-1com-1guyfu4jo0374.hertie.hh-han.com/ha/default.aspx#./!?&_suid=1648997101625040704780695491305")
+# # source local file that 1) calls institutional login site, 2) inputs credentials, 3) logs in, and 4) forwards you to Factiva Home Page (/Pages/Index)
+# base::source("01_credentials.R")
+
+# Manually (to avoid detection):
+  # 1) go to http://hertie.hh-han.com/HAN-AtoZ/atoz-complete.html
+  # 2) select Factiva Database
+  # 3) log in with own credentials
+  # 4) wait for redirect
+  # 5) Ctrl + W / Close new tab / navigate to tab 1
+  
+# ToDo: Maybe it would work with the updated code, try out later!
+
+
+# go to search page:
+search_page <- "https://global-1factiva-1com-1guyfu4be001b.hertie.hh-han.com/sb/default.aspx?NAPC=S"
+
+newspaper <- c("sddz", "dwelt", "taz", "zbild", "frarun")
+candidate <- c("Laschet", "Baerbock", "Scholz")
+dates <- c("20210101 to 20210131",
+           "20210201 to 20210228",
+           "20210301 to 20210331",
+           "20210401 to 20210430",
+           "20210501 to 20210531",
+           "20210601 to 20210630",
+           "20210701 to 20210731",
+           "20210801 to 20210831",
+           "20210901 to 20210930",
+           "20211001 to 20211031",
+           "20211101 to 20211130",
+           "20211201 to 20211231")
+
+results_factiva <- list()
+results_factiva_txt <- c()
+
+{
+for (i in 1:length(newspaper)) {
+  for (j in 1:length(candidate)) {
+    # if (j != 1) {repair = 1} # delete later
+    for (k in 1:length(dates)) {
+    
+query <- paste0("la=de and rst=", newspaper[i], " and date from ", dates[k], " and ", candidate[j])
+    
+remDr$navigate(search_page)
+
+tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+
+if (remDr$getCurrentUrl() == "https://login.hertie.hh-han.com/login/login.html") {
+  
+  # log in again
+  webElemUser <- remDr$findElement(using = "name", "plainuser")
+  webElemUser$sendKeysToElement(list(user))
+  # webElemUser$sendKeysToActiveElement(list(key = "tab"))
+  
+  webElemKey <- remDr$findElements(using = "name", "password")[[1]]
+  webElemKey$sendKeysToElement(list(key))
+  webElemKey$sendKeysToElement(list(key = "enter"))
+  
+  tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+  
+  # wait for like 1000 redirects...
+  Sys.sleep(30)
+  
+  # search again
+  remDr$navigate(search_page)
+  
+  # enter search term
+  prompt <- remDr$findElement("css selector", '.ace_text-input')
+  prompt$sendKeysToElement(list(query))
+  
+  # don't limit timeframe
+  alltime <- remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+  alltime$clickElement()
+  
+  # click search:
+  search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+  search$clickElement()
+  
+  tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+}
+
+# wait for like 1000 redirects...
+Sys.sleep(10)
+
+if (remDr$getCurrentUrl() != search_page) {
+  remDr$navigate(search_page)
+  tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+  Sys.sleep(5)
+}
+
+# wait until loaded
+# while (is.null(alltime)) {
+  
+  # don't limit timeframe  
+alltime <- 
+#  tryCatch({
+    remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+# }, error = function(e){NULL})
+# } 
+  alltime$clickElement()
+
+
+# enter search term
+prompt <- remDr$findElement("css selector", '.ace_text-input')
+prompt$sendKeysToElement(list(query))
+
+# click search:
+search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+search$clickElement()
+
+tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+
+# powernap:
+Sys.sleep(10)
+
+if (remDr$getCurrentUrl() == "https://login.hertie.hh-han.com/login/login.html") {
+  
+  # log in again
+  webElemUser <- remDr$findElement(using = "name", "plainuser")
+  webElemUser$sendKeysToElement(list(user))
+  # webElemUser$sendKeysToActiveElement(list(key = "tab"))
+  
+  webElemKey <- remDr$findElements(using = "name", "password")[[1]]
+  webElemKey$sendKeysToElement(list(key))
+  webElemKey$sendKeysToElement(list(key = "enter"))
+  
+  # wait for like 1000 redirects...
+  Sys.sleep(30)
+  
+  # search again
+  remDr$navigate(search_page)
+  
+  # enter search term
+  prompt <- remDr$findElement("css selector", '.ace_text-input')
+  prompt$sendKeysToElement(list(query))
+  
+  # don't limit timeframe
+  alltime <- remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+  alltime$clickElement()
+  
+  # click search:
+  search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+  search$clickElement()
+}
+
+# get data:
+# ToDo: make work as function (with correct output!)
+page_source <- remDr$getPageSource()[[1]]
+
+page <- page_source %>% 
+  read_html() 
+
+# just to have an alternative format:
+txt <- page_source %>% read_html() %>% html_elements("#headlineFrame") %>% html_text2() 
+
+results_factiva_txt <- append(results_factiva_txt, txt)
+
+results_factiva <- list.append(results_factiva, page)
+
+
+
+# test if there are more results:
+more <- tryCatch({remDr$findElement("css selector", ".nextItem")},
+                 error = function(e){NULL})
+
+
+while(!is.null(more)) {
+  
+  more$clickElement()
+  tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+   Sys.sleep(3)
+  
+  # get data:
+  # ToDo: make work as function (with correct output!)
+  page_source <- remDr$getPageSource()[[1]]
+    page <- page_source %>% 
+      read_html() 
+  # just to have an alternative format:
+  txt <- page_source %>% read_html() %>% html_elements("#headlineFrame") %>% html_text2() 
+  results_factiva_txt <- append(results_factiva_txt, txt)
+  results_factiva <- list.append(results_factiva, page)
+  
+
+    more <- tryCatch({remDr$findElements("css selector", ".nextItem")},
+                   error = function(e){})
+    if(purrr::is_empty(more) | is.null(more)){ 
+          more <-  NULL}
+    more <- more[[1]]
+      }
+    }
+  }
+}
+
+list.save(results_factiva_candidates, "articles/results_factiva_candidates.rds")
+save(results_factiva_candidates_txt, file = "articles/results_factiva_candidates_txt.csv")
+
+}
+
 ### flatten list objects to df (works well, so just leave it the base-R way for now) ####
 
 df <- tibble()
@@ -601,7 +814,182 @@ for (i in length(corpus)) {
     )
 }
 
-##### e.g. using purrr works gives nice output, but only for 3 rows...
+# scrape number of articles in general (no matter of candidates mentioned): ####
+{
+results_factiva_all <- list()
+results_factiva_all_txt <- c()
+
+  repair = 1 
+  repair_i <- 4
+  
+  for (i in repair_i:length(newspaper)){
+    # in case of error, manually finish inner loop run and set repair to next k to proceed
+    if (i != 4) {repair = 1} # delete later (or change condition to: i != i[where error happened])
+      for (k in repair:length(dates)){
+        
+        query <- paste0("la=de and rst=", newspaper[i], " and date from ", dates[k])
+        
+        remDr$navigate(search_page)
+        
+        tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+        
+        if (remDr$getCurrentUrl() == "https://login.hertie.hh-han.com/login/login.html") {
+          
+          # log in again
+          webElemUser <- remDr$findElement(using = "name", "plainuser")
+          webElemUser$sendKeysToElement(list(user))
+          # webElemUser$sendKeysToActiveElement(list(key = "tab"))
+          
+          webElemKey <- remDr$findElements(using = "name", "password")[[1]]
+          webElemKey$sendKeysToElement(list(key))
+          webElemKey$sendKeysToElement(list(key = "enter"))
+          
+          tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+          
+          # wait for like 1000 redirects...
+          Sys.sleep(30)
+          
+          # search again
+          remDr$navigate(search_page)
+          
+          # enter search term
+          prompt <- remDr$findElement("css selector", '.ace_text-input')
+          prompt$sendKeysToElement(list(query))
+          
+          # don't limit timeframe
+          alltime <- remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+          alltime$clickElement()
+          
+          # click search:
+          search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+          search$clickElement()
+          
+          tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+        }
+        
+        # wait for like 1000 redirects...
+        Sys.sleep(10)
+        
+        if (remDr$getCurrentUrl() != search_page) {
+          remDr$navigate(search_page)
+          tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+          Sys.sleep(5)
+        }
+        
+        # wait until loaded
+        # while (is.null(alltime)) {
+        
+        # don't limit timeframe  
+        alltime <- 
+          #  tryCatch({
+          remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+        # }, error = function(e){NULL})
+        # } 
+        alltime$clickElement()
+        
+        
+        # enter search term
+        prompt <- remDr$findElement("css selector", '.ace_text-input')
+        prompt$sendKeysToElement(list(query))
+        
+        # click search:
+        search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+        search$clickElement()
+        
+        tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+        
+        # powernap:
+        Sys.sleep(10)
+        
+        if (remDr$getCurrentUrl() == "https://login.hertie.hh-han.com/login/login.html") {
+          
+          # log in again
+          webElemUser <- remDr$findElement(using = "name", "plainuser")
+          webElemUser$sendKeysToElement(list(user))
+          # webElemUser$sendKeysToActiveElement(list(key = "tab"))
+          
+          webElemKey <- remDr$findElements(using = "name", "password")[[1]]
+          webElemKey$sendKeysToElement(list(key))
+          webElemKey$sendKeysToElement(list(key = "enter"))
+          
+          # wait for like 1000 redirects...
+          Sys.sleep(30)
+          
+          # search again
+          remDr$navigate(search_page)
+          
+          # enter search term
+          prompt <- remDr$findElement("css selector", '.ace_text-input')
+          prompt$sendKeysToElement(list(query))
+          
+          # don't limit timeframe
+          alltime <- remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+          alltime$clickElement()
+          
+          # click search:
+          search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+          search$clickElement()
+        }
+        
+        # get data:
+        # ToDo: make work as function (with correct output!)
+        page_source <- remDr$getPageSource()[[1]]
+        
+        page <- page_source %>% 
+          read_html() 
+        
+        # just to have an alternative format:
+        txt <- page_source %>% read_html() %>% html_elements("#headlineFrame") %>% html_text2() 
+        
+        results_factiva_all_txt <- append(results_factiva_all_txt, txt)
+        
+        results_factiva_all <- list.append(results_factiva_all, page)
+        
+        
+        
+        # test if there are more results:
+          # ToDo: find out why it sometimes breaks here!
+        more <- tryCatch({remDr$findElement("css selector", ".nextItem")},
+                         error = function(e){NULL})
+        if(purrr::is_empty(more) | is.null(more)){ 
+          more <-  NULL}
+        
+        
+        while(!is.null(more)) {
+          
+          more$clickElement()
+          tryCatch({remDr$acceptAlert}, error = function(e){NULL})
+          Sys.sleep(3)
+          
+          # get data:
+          # ToDo: make work as function (with correct output!)
+          page_source <- remDr$getPageSource()[[1]]
+          page <- page_source %>% 
+            read_html() 
+          # just to have an alternative format:
+          txt <- page_source %>% read_html() %>% html_elements("#headlineFrame") %>% html_text2() 
+          results_factiva_all_txt <- append(results_factiva_all_txt, txt)
+          results_factiva_all <- list.append(results_factiva_all, page)
+          
+          
+          more <- tryCatch({remDr$findElements("css selector", ".nextItem")},
+                           error = function(e){})
+          if(purrr::is_empty(more) | is.null(more)){ 
+            more <-  NULL}
+          more <- more[[1]]
+        }
+      }
+    }
+  
+list.save(results_factiva_all, "articles/results_factiva_all.rds")
+save(results_factiva_all_txt, file = "articles/results_factiva_all_txt.csv")
+
+}
+
+
+
+
+##### e.g. using purrr works gives nice output, but only for 3 rows... ####
 library(purrr)
 t1 <- tibble(map(
   id = corpus, list("meta", "id")),
