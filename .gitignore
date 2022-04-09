@@ -10,3 +10,5 @@ Articles/
 Polling Data/
 articles.lnk
 01_credentials.R
+all_data.RData
+factiva_data_candidate_articles.xlsx
