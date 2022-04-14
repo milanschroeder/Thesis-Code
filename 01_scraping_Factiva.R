@@ -616,24 +616,46 @@ write_xlsx(df_factiva, "articles/factiva_data.xlsx")
 
 
 
+### missed articles (by hand) ####
+# open RS
 
-
+# i = 4
+# k = 3
+# {
+# query <- paste0("la=de and rst=", newspaper[i], " and date from ", dates[k])
+# query
+# remDr$navigate(search_page)
+# prompt <- remDr$findElement("css selector", '.ace_text-input')
+# prompt$sendKeysToElement(list(query))
+# 
+# alltime <- remDr$findElement(using = 'xpath', "//select[@id='dr']/option[@value='_Unspecified']")
+# alltime$clickElement()
+# 
+# 
+# # click search:
+# search <- remDr$findElement("css selector", ".standardBtn , #btnSBSearch span")
+# search$clickElement()
+# }
+# # navigate manually to missing results
+# page <- remDr$getPageSource()[[1]]
+# writeLines(page,
+#            paste0("articles/search_results_html_missed/factiva", newspaper[i], month.abb[k], 1, ".txt"), useBytes = T)
 
 
 
 # Saving html ####
 
-# save html as txt:
-for (i in 1:length(factiva_articles)) {
-  writeLines(factiva_articles$.[i], paste0("articles/html/factiva", i, ".txt"), useBytes = T)
-}
-
-# get back html:
-html_factiva_txt <- c()
-for (i in 1:length(factiva_articles)) {
-  html_factiva_txt[i] <- readr::read_file(paste0("articles/html/factiva", i, ".txt"))
-}
-
+# # save html as txt:
+# for (i in 1:length(factiva_articles)) {
+#   writeLines(factiva_articles$.[i], paste0("articles/html/factiva", i, ".txt"), useBytes = T)
+# }
+# 
+# # get back html:
+# html_factiva_txt <- c()
+# for (i in 1:length(factiva_articles)) {
+#   html_factiva_txt[i] <- readr::read_file(paste0("articles/html/factiva", i, ".txt"))
+# }
+# 
 
 # process data ####
 
@@ -670,11 +692,11 @@ person <- c()
 heading <- c()
 result_no <- c()
 
-files <- dir("articles/search_results_html")
+files <- dir("articles/search_results_html_missed")
 
 for (i in 1:length(files)) {
 
-  tmp_file <- readr::read_file(paste0("articles/search_results_html/", files[i])) %>% 
+  tmp_file <- readr::read_file(paste0("articles/search_results_html_missed/", files[i])) %>% 
     read_html(encoding = "UTF-8")
     
   tmp_candidate <- tmp_file %>%
@@ -722,7 +744,6 @@ for (i in 1:length(files)) {
 }
 
 
-
 # old version:
 { 
   
@@ -761,7 +782,7 @@ for (i in 1:length(files)) {
 }
 
 # save raw:
-df_factiva <- tibble(heading, links, source, info, lead, person, result_no)
+df_factiva_missing <- tibble(heading, links, source, info, lead, person, result_no)
 
 
 # function to translate written german months into numbers: 
@@ -791,16 +812,15 @@ df_factiva %<>%
       as.numeric(),
     month = str_split(info, boundary("word"), simplify = T)[,2],
     mm = full_german_month_to_mm(month),
-    yyyy = str_split(df_factiva$info[1], boundary("word"), simplify = T)[,3] %>% as.numeric(),
+    yyyy = 2021,
     date = paste0(dd, "-", mm, "-", yyyy) %>% dmy()
   ) %>% 
-    select(-c(info, dd, mm, yyyy))
+select(-c(info, yyyy))
 
-save.image("all_data.RData")
+}
 
 write_xlsx(df_factiva, "articles/factiva_data.xlsx")
 
-}
 
 # join multiple candidate mentions: ####
 
@@ -894,7 +914,7 @@ remDr <- rD[["client"]]
 
 # as loop:
 
-ID_repair = 16
+ID_repair = 1
 while(length(dir("articles/html")) < length(df_candidates$links)){
 
 try(

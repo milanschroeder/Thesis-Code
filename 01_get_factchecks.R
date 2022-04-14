@@ -3,12 +3,15 @@
 library(rvest)
 library(tidyverse)
 library(lubridate)
+library(RSelenium)
 
 # get dpa factchecks ####
 dpa <- "https://dpa-factchecking.com/germany/"
 dpa_baseURL <- "https://dpa-factchecking.com"
 
-dpa_factcheck <- read_html(dpa)
+dpa_factcheck <- read_html("articles/disinformation/dpa-factchecking.html")
+
+
 
 links_dpa <- paste0(dpa_baseURL,
                     dpa_factcheck %>% html_nodes(".content a") %>% html_attr('href')
@@ -58,11 +61,41 @@ baerbock_disinfo <- factchecks_dpa %>% filter(str_detect(title, "Baerbock"))
 # get correctiv factchecks ####
 correctiv_searchURL <- "https://correctiv.org/?s="
 
-for (i in candidate) {
+system("taskkill /im java.exe /f", intern=FALSE, ignore.stdout=FALSE)
+rD <- rsDriver(browser = "chrome",
+               chromever = "99.0.4844.51",
+               verbose = F,
+               javascript = T,
+               nativeEvents = T,
+               extraCapabilities = eCap)
+remDr <- rD[["client"]]
+
+page_source <- F
+i = 1
+for (i in 1:length(candidate)) {
   search <- paste0(correctiv_searchURL,
                    candidate[i])
   
+  remDr$navigate(search)
   
+  page_source_prev <- remDr$getPageSource()[[1]]
+  
+  while (page_source_prev != page_source) {
+    
+    page_source_prev <- remDr$getPageSource()[[1]]
+    
+    webElemEnd <- tryCatch({remDr$findElement("css", "body")},
+                           error = function(e){NULL})
+    try(webElemEnd$sendKeysToElement(list(key = "end")))
+  
+  randsleep <- sample(seq(sleepmin, sleepmax, by = 0.001), 1)
+  Sys.sleep(randsleep)
+  
+  page_source <- remDr$getPageSource()[[1]]
+  }
+  
+  writeLines(page_source, paste0("articles/disinformation/correctiv", candidate[i], ".txt"), useBytes = T)
+
 } 
 
 # get mimikama factchecks ####

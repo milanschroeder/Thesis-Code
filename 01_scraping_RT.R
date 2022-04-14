@@ -7,7 +7,7 @@ eCap <- list(
   phantomjs.page.settings.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36"
 )
 
-## create general (basic) function to scrape RT DE: ####
+## create general (basic) function to scrape RT DE searches: ####
 scrapeRT <- function(startdate = startdate, 
                      period_end = period_end, 
                      keyword = "mehr",
@@ -49,6 +49,9 @@ scrapeRT <- function(startdate = startdate,
   startdate = lubridate::dmy(startdate)
   enddate <- startdate %>%  
     add_with_rollback(., days(interval_length))
+  rollback_length <- ifelse(interval_length == 0,
+                     1,
+                     interval_length)
   
   while (startdate <= dmy(period_end)) {
     # loop over search URLs by time interval:
@@ -118,7 +121,7 @@ scrapeRT <- function(startdate = startdate,
     
     # save search results as txt:
     # ToDo: check if folder exists, else create
-    writeLines(page, paste0("articles/RT_searches_candidates/", keyword , startdate, "-", enddate, ".txt"), useBytes = T)
+    writeLines(page, paste0("articles/RT_searches_more/", startdate, "-", enddate, ".txt"), useBytes = T)
     
     # safe list of links per interval:
     new_links <- page %>% 
@@ -136,10 +139,11 @@ scrapeRT <- function(startdate = startdate,
     print(paste("period", startdate, "to", enddate, "completed. Setting period to:"))
     
     # go back one period
+    
     enddate <- enddate %>% 
-      add_with_rollback(., days(interval_length))
+      add_with_rollback(., days(rollback_length))
     startdate <- startdate %>% 
-      add_with_rollback(., days(interval_length))
+      add_with_rollback(., days(rollback_length))
     
     # ToDo: add option to suppress output: 
     print(paste(startdate, "to", enddate))
@@ -165,10 +169,12 @@ scrapeRT <- function(startdate = startdate,
 # select startdate (here: 01 Jan 2021)
 startdate <- "01-01-2021" 
 # select time interval (here: 2 to keep small as possible)
-period_end <- "31-12-2021"
+period_end <- "01-01-2022"
 # keyword & interval as default
 
-links_RT_search <- scrapeRT(startdate, period_end, interval_length = 1)
+# links_RT_search <- scrapeRT(startdate, period_end, interval_length = 2)
+links_RT_search_finer <- scrapeRT(startdate, period_end, interval_length = 1)
+links_RT_search_finest <- scrapeRT(startdate, period_end, interval_length = 0)
 
 links_RT_search_Baerbock_new <- scrapeRT(startdate, period_end, keyword = "Baerbock", interval_length = 25, sleepmin = 5, sleepmax = 7)
 # got 419/422 (soll 408 in 2021)
@@ -176,6 +182,16 @@ links_RT_search_Laschet_new <- scrapeRT(startdate, period_end, keyword = "Lasche
 # got 390/413 (soll 409 in 2021)
 links_RT_search_Scholz_new <- scrapeRT(startdate, period_end, keyword = "Scholz", interval_length = 25, sleepmin = 5, sleepmax = 7)
 # got 439/471 (soll 447 in 2021) 
+
+# check on 12-03/12-04 
+
+### ToDo: FIND OUT WHICH ARE MISSING!!! ####
+
+  # search all 45 search result files for "Weiter-Button"
+  # get all 68 missing articles#
+
+  # convert to dataframe
+
 
 base_url_rt <- "https://de.rt.com"
 
@@ -202,100 +218,11 @@ save.image("all_data.RData")
 # identical(links_RT_search, 'Articles/rt_links.rds')
 
 
-### get data from articles ####
-
-# flatten list:
-library(rvest)
-# links_RT_search <- read_rds('Articles/rt_links.rds')
-# links_RT_flat <- links_RT_search %>% flatten()
-
-links_RT <- c()
-for(i in 1:length(links_RT_search)){
-  
-  for(j in 1:length(links_RT_search[[i]])){
-    
-    links_RT <- append(links_RT, xml_attrs(links_RT_search[[i]][[j]])[1][[1]])
-    
-  }
-  j = 1
-}
-
-
-library(magrittr)
-links_RT %<>% tibble(links_RT) %>% 
-  mutate(
-    id = str_split(links_RT, "/*/", simplify = T, n = 3)[,3],
-    id = str_split(id, "-", simplify = T)[,1],
-    id = regmatches(id, gregexpr("[[:digit:]]+", id)) %>%  unlist() %>% as.numeric(),
-    links_full = paste0("https://de.rt.com", links_RT)
-  ) %>% 
-  select(-.)
-
-
-readr::write_csv(links_RT, "Articles/links_rt.csv")
-links_RT <- read.csv("articles/links_rt.csv")
-
-# somehow different (df vs tbl_df), shouldn't matter
-identical(test$links_full, links_RT$links_full)
-
-
-
-# think of a way to include this in function but run only once:
-system("taskkill /im java.exe /f", intern=FALSE, ignore.stdout=FALSE)
-# start Selenium
-library(RSelenium)
-rD <- rsDriver(browser = "chrome",
-               chromever = "99.0.4844.51",
-               verbose = F)
-remDr <- rD[["client"]]
-
-extract_variables_rt <- function(doc = doc){
-  
-  # ideally (but hopefully unnecessary): include try/catch
-  doc <- read_html(doc)
-  df <- bind_cols(
-    tibble(
-      date = case_when(
-        !is.null_or_na(doc %>% html_elements(".ArticleView-timestamp .Timestamp-default")) ~ str_c("", doc %>% html_elements(".ArticleView-timestamp .Timestamp-default") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".amp-pages__date")) ~ str_c("", doc %>% html_elements(".amp-pages__date") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      heading = case_when(
-        !is.null_or_na(doc %>% html_elements(".HeadLine-type_2")) ~ str_c("", doc %>% html_elements(".HeadLine-type_2") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".amp-pages__title")) ~ str_c("", doc %>% html_elements(".amp-pages__title") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      lead = case_when(
-        !is.null_or_na(doc %>% html_elements(".Text-type_1")) ~ str_c("", doc %>% html_elements(".Text-type_1") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".amp-pages__summary")) ~ str_c("", doc %>% html_elements(".amp-pages__summary") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      resort = case_when(
-        !is.null_or_na(doc %>% html_elements(".Breadcrumbs-arrow+ .Breadcrumbs-item span")) ~ str_c("", doc %>% html_elements(".Breadcrumbs-arrow+ .Breadcrumbs-item span") %>% html_text2()),
-        # not shown on amp pages:
-        !is.null_or_na(doc %>% html_elements(".amp-pages__title")) ~ "amp", 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      text = case_when(
-        !is.null_or_na(doc %>% html_elements(".ViewText-root")) ~ str_c("", doc %>% html_elements(".ViewText-root") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".text")) ~ str_c("", doc %>% html_elements(".text") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    wordcount = NA,
-    source = "RTDE",
-    page = NA
-  ) %>% 
-    select(heading, source, resort, wordcount, page, date, text, lead)
-  return(df)
-}
 
 ## get page source ####
 # with function:
-get_pages_RT <- function(link){
+{
+  get_pages_RT <- function(link){
   # get page resource
   
   remDr$navigate(link)
@@ -313,16 +240,23 @@ get_pages_RT <- function(link){
 }
 
 # data_RT <- map_dfr(links_RT$links_full, get_pages_RT)
-# 
 # remDr$close()
 
 # data_RT %<>% left_join(., links_RT, by = c("link" = "links_full"))
 
-
+# # save dataset
+ 
+# write_csv(data_RT, 'Articles/data_rt.csv')
+# rio::export(data_RT, "Articles/data_rt.rds")
+# 
+# # import again:
+# data_RT1 <- rio::import("articles/data_rt.rds")
+# data_RT2 <- rio::import("articles/data_rt.csv") # seems preferable, but larger
+}
 
 # better: loop to save txt
-
-  # start server
+{
+# start server
 
 for (i in 1:length(candidate_links$links)) {
   while (remDr$getCurrentUrl() != candidate_links$links[i]) {
@@ -339,147 +273,4 @@ for (i in 1:length(candidate_links$links)) {
   }
 }
 
-
-# 
-# # save dataset
-# save.image("all_data.RData")
-# 
-# write_csv(data_RT, 'Articles/data_rt.csv')
-# rio::export(data_RT, "Articles/data_rt.rds")
-# 
-# # import again:
-# data_RT1 <- rio::import("articles/data_rt.rds")
-# data_RT2 <- rio::import("articles/data_rt.csv") # seems preferable, but larger
-# 
-
-# ToDo:
-# clean dates
-# wordcount
-# keyword variables
-# sentiment?
-# analyse :D
-
-
-
-### convert pages to data: #####
-
-
-# IA version
-{extract_variables_rt <- function(doc = doc){
-  
-  # ideally (but hopefully unnecessary): include try/catch
-  doc <- read_html(doc)
-  df <- bind_cols(
-    tibble(
-      date = case_when(
-        !is.null_or_na(doc %>% html_elements(".ArticleView-timestamp .Timestamp-default")) ~ str_c("", doc %>% html_elements(".ArticleView-timestamp .Timestamp-default") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".amp-pages__date")) ~ str_c("", doc %>% html_elements(".amp-pages__date") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      heading = case_when(
-        !is.null_or_na(doc %>% html_elements(".HeadLine-type_2")) ~ str_c("", doc %>% html_elements(".HeadLine-type_2") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".amp-pages__title")) ~ str_c("", doc %>% html_elements(".amp-pages__title") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      lead = case_when(
-        !is.null_or_na(doc %>% html_elements(".Text-type_1")) ~ str_c("", doc %>% html_elements(".Text-type_1") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".amp-pages__summary")) ~ str_c("", doc %>% html_elements(".amp-pages__summary") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      resort = case_when(
-        !is.null_or_na(doc %>% html_elements(".Breadcrumbs-arrow+ .Breadcrumbs-item span")) ~ str_c("", doc %>% html_elements(".Breadcrumbs-arrow+ .Breadcrumbs-item span") %>% html_text2()),
-        # not shown on amp pages:
-        !is.null_or_na(doc %>% html_elements(".amp-pages__title")) ~ "amp", 
-        TRUE ~ NA_character_)
-    ),
-    tibble(
-      text = case_when(
-        !is.null_or_na(doc %>% html_elements(".ViewText-root")) ~ str_c("", doc %>% html_elements(".ViewText-root") %>% html_text2()),
-        !is.null_or_na(doc %>% html_elements(".text")) ~ str_c("", doc %>% html_elements(".text") %>% html_text2()), 
-        TRUE ~ NA_character_)
-    ),
-    id = NA,
-    wordcount = NA,
-    source = "RTDE",
-    page = NA
-  ) %>% 
-    select(id, heading, source, resort, wordcount, page, date, text, lead)
-  return(df)
-}
-df_rt <- map_dfr(html_pages, extract_variables_rt)
-}
-
-
-
-# old version:
-
-
-df_rt_articles <- tibble()
-
-for (ID in dir("articles/RThtml")) {
-  
-  doc <- readr::read_file(paste0("articles/RThtml/RTarticle", i, ".txt")) %>% 
-    read_html()
-
-df_rt_articles <- 
-  append(
-            date =  doc %>% html_elements(".ArticleView-timestamp .Timestamp-default") %>% html_text2(),
-              #  %>% tibble() %>% rename(., "date" = "."),
-            heading = doc  %>% html_elements(".HeadLine-type_2") %>% html_text2(),
-              #  %>% tibble() %>% rename(., "heading" = "."),
-            lead = doc %>% html_elements(".Text-type_1") %>% html_text2() %>%
-                   tibble() %>% rename(., "lead" = "."),
-            resort = doc %>% html_elements(".Breadcrumbs-arrow+ .Breadcrumbs-item span") %>% html_text2() %>%
-                   tibble() %>% rename(., "resort" = "."),
-                 doc %>% html_elements(".ViewText-root")%>% html_text2() %>%
-                   tibble() %>% rename(., "text" = "."),
-                 id = ID,
-                 wordcount = NA,
-                 source = "RTDE",
-                 page = NA
-  )
-}
-
-df_rt_articles %<>%
-    select(id, heading, source, resort, wordcount, page, date, text, lead)
-
-
-#   return(df)
-#   }
-
-month_abbs_de <- df_rt %>% 
-  mutate(month_abb = str_sub(date, -19, -16)) %>% 
-  group_by(month_abb) %>% 
-  summarize(n()) %>% 
-  arrange(month_abb) %>% 
-  select(month_abb) %>%
-  cbind(month = c(4, 8, 12, 2, 1, 7, 6, 5, 3, 5, 11, 10, 9, 4, 8, 12, 2, 1, 7, 6, 3, 11, 10, 9, NA)) %>% 
-  arrange(month)
-
-df_rt %<>% 
-  mutate(year = str_sub(date, -14, -11) %>% as.numeric(),
-         month_abb = str_sub(date, -19, -16),
-         day = str_sub(date, 1, 2) %>% as.numeric() %>% sprintf(fmt = "%02d", .)
-  ) %>% 
-  left_join(., month_abbs_de, by = "month_abb") %>% 
-  mutate(date = paste0(year, "/", month, "/", day) %>% as.POSIXlt(., format = "%Y/%m/%d")) %>% 
-  arrange(date, resort) %>% 
-  unique()
-
-df_study <- df_rt %>% filter(year == 2021)
-
-df_study %<>% mutate(
-  mention_Laschet = str_detect(text, "Laschet"),
-  mention_Scholz = str_detect(text, "Scholz"),
-  mention_Baerbock = str_detect(text, "Baerbock")
-)
-
-df_study %>% 
-  group_by(mention_Laschet, mention_Scholz, mention_Baerbock) %>% 
-  summarize(n())
-
-# LOL each one is mentioned in one article only xD ... I'm done. 
-
+  }
