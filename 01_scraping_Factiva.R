@@ -821,7 +821,6 @@ select(-c(info, yyyy))
 
 write_xlsx(df_factiva, "articles/factiva_data.xlsx")
 
-
 # join multiple candidate mentions: ####
 
 df_Baerbock <- df_factiva %>% filter(person == "Baerbock") 
@@ -837,13 +836,13 @@ df_candidates <- full_join(df_candidates, df_Scholz, by = c("source", "heading",
   # potential solution: read all to df %>% unique(header/link, date, source, result_no) (and identify which ones were duplicated)
   # FR: limit corpus to Deutschlandausgabe?
   
-overview_cases <- 
-  df_factiva %>% 
-  mutate(month = full_german_month_to_mm(month)) %>% 
-  group_by(person, source, month, result_no) %>% 
-  summarise(n = n()) %>% 
-  arrange(source, person, month, result_no)
-write_xlsx(overview_cases, "articles/overview_cases.xlsx")
+# overview_cases <- 
+#   df_factiva %>% 
+#   mutate(month = full_german_month_to_mm(month)) %>% 
+#   group_by(person, source, month, result_no) %>% 
+#   summarise(n = n()) %>% 
+#   arrange(source, person, month, result_no)
+# write_xlsx(overview_cases, "articles/overview_cases.xlsx")
 
 
 
@@ -1013,3 +1012,7 @@ if (remDr$getCurrentUrl() == "https://login.hertie.hh-han.com/login/login.html")
   )
   ID_repair = ID+1
 }
+
+
+
+

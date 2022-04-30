@@ -13,7 +13,8 @@ scrapeRT <- function(startdate = startdate,
                      keyword = "mehr",
                      interval_length = 2,
                      sleepmin = 1,
-                     sleepmax = 3){
+                     sleepmax = 3,
+                     folder = "RT_searches"){
   
   # ToDO: Check input
   # startdate & period_end may be anything convertable by lubridate::dmy(), e.g. a string in the format "dd-mm-yyyy"
@@ -52,12 +53,14 @@ scrapeRT <- function(startdate = startdate,
   rollback_length <- ifelse(interval_length == 0,
                      1,
                      interval_length)
+  searchterm <- ifelse(keyword == "mehr",
+                       "",
+                       keyword)
   
   while (startdate <= dmy(period_end)) {
     # loop over search URLs by time interval:
     search <- paste0("https://de.rt.com/search?q=", keyword ,"&df=", startdate, "&dt=", enddate)  
     
-    ### everything else in between:
     while(remDr$getCurrentUrl() != search){
       remDr$navigate(search)
       }
@@ -95,7 +98,12 @@ scrapeRT <- function(startdate = startdate,
         try(webElem2$clickElement())
 
         Sys.sleep(1)
-                
+         
+        # check if still on right page:
+        while(remDr$getCurrentUrl() != search){
+          remDr$goBack()
+        }
+               
         # check if sth still changes:
         pages_source_compare <- remDr$getPageSource()[[1]]
         if (pages_source == pages_source_compare){
@@ -113,15 +121,19 @@ scrapeRT <- function(startdate = startdate,
     }
     
     # save and overwrite with every loop, in case sth breaks
-    # ToDo: test if this works within new_links assignment pipe as well
+  # ToDo: test if this works within new_links assignment pipe as well
     # html_search <- remDr$getPageSource()[[1]] 
     
     # print(paste("search page successfully saved after", i, " clicks"))
     page <- remDr$getPageSource()[[1]]
     
     # save search results as txt:
-    # ToDo: check if folder exists, else create
-    writeLines(page, paste0("articles/RT_searches_more/", startdate, "-", enddate, ".txt"), useBytes = T)
+# ToDo: check if folder exists, else create
+    if (interval_length == 0) {
+      writeLines(page, paste0("articles/", folder, "/", searchterm, startdate, ".txt"), useBytes = T)
+    } else {
+      writeLines(page, paste0("articles/", folder, "/", searchterm, startdate, "-", enddate, ".txt"), useBytes = T)
+    }
     
     # safe list of links per interval:
     new_links <- page %>% 
@@ -174,23 +186,29 @@ period_end <- "01-01-2022"
 
 # links_RT_search <- scrapeRT(startdate, period_end, interval_length = 2)
 links_RT_search_finer <- scrapeRT(startdate, period_end, interval_length = 1)
-links_RT_search_finest <- scrapeRT(startdate, period_end, interval_length = 0)
 
+# candidates
 links_RT_search_Baerbock_new <- scrapeRT(startdate, period_end, keyword = "Baerbock", interval_length = 25, sleepmin = 5, sleepmax = 7)
 # got 419/422 (soll 408 in 2021)
 links_RT_search_Laschet_new <- scrapeRT(startdate, period_end, keyword = "Laschet", interval_length = 25, sleepmin = 5, sleepmax = 7)
 # got 390/413 (soll 409 in 2021)
 links_RT_search_Scholz_new <- scrapeRT(startdate, period_end, keyword = "Scholz", interval_length = 25, sleepmin = 5, sleepmax = 7)
 # got 439/471 (soll 447 in 2021) 
+links_RT_search_finest_Baerbock <- scrapeRT(startdate, period_end, keyword = "Baerbock", interval_length = 0, sleepmin = 2, folder = "RT_searches_candidates_finest")
+links_RT_search_finest_Laschet <- scrapeRT(startdate, period_end, keyword = "Laschet", interval_length = 0, sleepmin = 2, folder = "RT_searches_candidates_finest")
+links_RT_search_finest_Scholz <- scrapeRT(startdate, period_end, keyword = "Scholz", interval_length = 0, sleepmin = 2, folder = "RT_searches_candidates_finest")
+
+
+# RT_searches_candidates_finest <- map_dfr(.x = candidate, cbind(scrapeRT(startdate, period_end, .x, 0, folder = "RT_searches_candidates_finest"), candidate = .x))
 
 # check on 12-03/12-04 
 
 ### ToDo: FIND OUT WHICH ARE MISSING!!! ####
 
-  # search all 45 search result files for "Weiter-Button"
-  # get all 68 missing articles#
+  # search all search result files for "Weiter-Button"
+  # get all 68 missing articles
 
-  # convert to dataframe
+  # convert to df
 
 
 base_url_rt <- "https://de.rt.com"
