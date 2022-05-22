@@ -1100,3 +1100,9 @@ ggplot(data = data_plot1, aes(y = value, x = date)) +
 ggsave("plots/candidate_mentions.png")
 
 
+# save:
+
+save(list = c(
+  "diff_by_day", "diff_by_day_nobild"
+), 
+file = "analyses/diff_by_day.RData")
