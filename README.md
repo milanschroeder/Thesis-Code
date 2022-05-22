@@ -94,21 +94,26 @@
     -   articles/old/RT_articles_more.xlsx (header/link/lead of 45 articles that were previously missed)
 
 ### ToDo list:
-
--   save disinfo and Factiva as .RData!
--   concatenate "factiva\_", source_abb, month, and (result_no -\> number) to saved (despite irregularities with missed ones? or just source-month-results_no)
+-   are there all analyses on candidate related articles only (by day, week, candidate, source + interactions) 
+-   tokenize full candidate names as compound expression 
 -   add plot layer with
     -   disinformation highlights
     -   individual article/mentions counts per newspaper
     -   aggregated article/mentions count
-    -   sentiment scores
+    -   sentiment scores!
     -   ...?
--   aggregate (by day/week, what else?)
--   get sentiment analyses (avg, binary for each doc, plot by c/d case)
+-   word_frequencies (aggregated by day/week, what else?)
+-   sentiment analyses (avg, binary for each doc, plot by c/d case)
+    -   decide whether to prefer mentions in context or full article sentiment
     -   compare results across dictionaries
+    -   include negation dictionary (before stop-word exclusion!)
+    -   plot/compare base sentiment over time
+    -   plot/compare base sentiment to candidate sentiment over time (better  use headlines here to compare across sources)
 -   analyse time-series
+    - read up on interrupted time-series analysis etc -> choose fitting model
 -   finish paper (...there is also theory...)
 -   clean unnecessary stuff from 02_data_extraction_Factiva.R
 -   build replication scraper that uses saved .txt files
 -   improve scraping functions to make them publicly available
--   clean folder
+-   clean folders
+

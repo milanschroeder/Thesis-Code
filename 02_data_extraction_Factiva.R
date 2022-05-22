@@ -62,6 +62,7 @@ factiva_fulltexts %<>% filter(document != "delete") %>%
   select(-source) %>%
   arrange(id) 
   
+
 # somethings wrong with [1:2] here!
 df_candidates %<>% bind_cols(., factiva_fulltexts)
 
@@ -73,7 +74,7 @@ corpus_factiva <- left_join(df_factiva,
             by = "links",
             suffix = c("", "_Scholz")) %>% 
   mutate(
-    fulltext = ifelse(!is.na(text), str_c(heading, text), NA),
+    fulltext = ifelse(!is.na(text), str_c(heading, text, sep = " "), NA),
     link = links %>% str_sub(., start = 61),
     intextlinks = list(character(0)),
     mehrlink = list(character(0)),

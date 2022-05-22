@@ -104,9 +104,81 @@ polls_long <- polls_wide %>%
   pivot_wider(.,  values_from = value, 
               names_from = variable) 
 
+# # get fitted values:
+# (polls_fitted <- 
+#   ggplot(polls_long, 
+#          aes(colour = party)) +
+#   geom_line(aes(x = date, y = mean))
+# )
+# 
+# p_load(pracma)
+# 
+# dates = seq.Date(as.Date("2021-01-01"), as.Date("2021-12-31"), 1)
+
+polls_long2 <- tibble(
+  expand_grid(
+    date = seq.Date(min(polls_long$date), max(polls_long$date), 1), 
+    party = c("afd", "cdu", "fdp", "gru", "lin", "oth", "spd"))) %>% 
+  left_join(., polls_long, by = c("date", "party"))
+  mutate(date = as.numeric(date)) 
+
+
+spd <- polls_long2 %>% dplyr::filter(party == "spd") %>% 
+  mutate(share = pracma::interp1(x = as.numeric(date), y = as.numeric(mean), method = "linear")) %>% 
+  select(date, share, party)
+
+cdu <- polls_long2 %>% dplyr::filter(party == "cdu") %>%  
+  mutate(share = pracma::interp1(x = as.numeric(date), y = as.numeric(mean), method = "linear")) %>% 
+  select(date, share, party)
+
+gru <- polls_long2 %>% dplyr::filter(party == "gru") %>% 
+  mutate(share = pracma::interp1(x = as.numeric(date), y = as.numeric(mean), method = "linear")) %>% 
+  select(date, share, party)
+        
+polls_interpolated_long <- bind_rows(spd, cdu, gru)
+
+
+# polls_interpolated_long <- 
+#   ggplot_build(polls_fitted)$data[[1]][, c(3,4,6)] %>% 
+#   mutate(date = as.Date(x, origin = "1970-01-01"), 
+#          share = y,
+#          party = case_when(group == 1 ~ "afd", 
+#                            group == 2 ~ "cdu", 
+#                            group == 3 ~ "fdp", 
+#                            group == 4 ~ "gru", 
+#                            group == 5 ~ "lin", 
+#                            group == 6 ~ "oth", 
+#                            group == 7 ~ "spd")) %>% 
+#   select(-group, -x, -y)
+
+polls_interpolated_wide <- 
+    polls_interpolated_long %>% 
+    pivot_wider(., 
+                names_from = party, 
+                values_from = share) %>% 
+  rename_with(., .cols = -date, .fn = ~ paste0("share_", .x)) %>% 
+  left_join(., 
+            polls_wide, 
+            by = "date") %>% 
+  mutate(cdu_spd = share_cdu - share_spd, 
+         cdu_gru = share_cdu - share_gru, 
+         spd_gru = share_spd - share_gru,
+         
+         rank_cdu = case_when(cdu_spd > 0 & cdu_gru > 0 ~ 1,
+                              cdu_spd > 0 | cdu_gru > 0 ~ 2,
+                              cdu_spd < 0 & cdu_gru < 0 ~ 3),
+         rank_gru = case_when(spd_gru < 0 & cdu_gru < 0 ~ 1,
+                              spd_gru < 0 | cdu_gru < 0 ~ 2,
+                              spd_gru > 0 & cdu_gru > 0 ~ 3),
+         rank_spd = case_when(cdu_spd < 0 & spd_gru > 0 ~ 1,
+                              cdu_spd < 0 | spd_gru > 0 ~ 2,
+                              cdu_spd > 0 & spd_gru < 0 ~ 3)
+         )
+
 # save all:
 save(list = c("polls_wide", "polls_long", 
               "polls_est", "polls_est_long",
+              "polls_interpolated_long", "polls_interpolated_wide",
               "zweitstimme_polls", "zweitstimme_polls_long"), 
      file = "polls/all_polls.RData")    
-
+load("polls/all_polls.RData")

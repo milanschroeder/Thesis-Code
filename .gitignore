@@ -14,4 +14,6 @@ all_data.RData
 factiva_data_candidate_articles.xlsx
 .RDataTmp
 analyses/JITP-Replication-Final/
-analyses/deu_news_2021-10K
+analyses/deu_news_2021-10K/
+00_failed_attempts.R
+01_scraping_FAZ.R

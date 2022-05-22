@@ -493,7 +493,7 @@ corpus_RT <- rbind(corpus_RT %>% mutate(across(.fns = ~ as.character(.x)  %>% st
     datetime = ifelse(is.na(date_article), date_missed %>% str_remove_all(., "\\r") %>% str_remove("Uhr") %>% as.POSIXct(format = " %d %b. %Y %H:%M ") %>% as.character(), date_article),
     date = ifelse(is.na(date), date_missed %>% as.Date(format = " %d %b. %Y"), date),
     text = ifelse(is.na(text), text_missed %>% str_remove_all(., "\\r") %>%  str_remove_all("\\n") %>% str_remove_all("noscript pattern"), text),
-    fulltext = str_c(header, lead, text),
+    fulltext = str_c(header, lead, text, sep = " "),
     resort = link %>% str_extract(., "([^/]+)"),
     document = ifelse(is.na(document), document_missed, document),
     source = "RTDE",
@@ -628,7 +628,7 @@ corpus_RT <- corpusRT_all %>%  # or corpus_RT?
          lead_article =  str_remove_all(lead_article, "\\r"),
          date =  str_remove_all(date, "\\r") %>%  as.Date(format = " %d. %B %Y"),
          source = "RTDE",
-         fulltext = str_c(header, lead, text)
+         fulltext = str_c(header, lead, text, sep = " ")
          ) %>% 
   select(-ends_with(c(".y")), -heading)
 
