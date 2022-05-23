@@ -1,12 +1,13 @@
 # Strategies of Kremlin-Originated Disinformation in the 2021 German Federal Election
 
-### A Thesis Project by Milan Schr�der
+### A Thesis Project by Milan Schröder
 
 #### Master of International Affairs \| Class of 2022 \| Hertie School, Berlin
 
 ### Abstract:
 
-...
+Election interferences by authoritarian states, most prominently Russia, have been grown to a major concern after their alleged contribution to populist victories. However, little is known about the effect of such influence operations. To assess their effectiveness and potential countermeasures, it is critical to understand what the goal and strategy behind such campaigns is. Besides partisan intervention, elections also provide opportunity for democracy-eroding interference. For such an intervention, the present paper discusses two ways of targeting political support in the sense of Easton (1975), by promoting political alienation (Gamson, 1968), focussing on the perception of either the input, or output of the democratic political system.
+The empirical part of the paper, tests for these strategies in the runup to the 2021 German federal election. Quantitative text analysis was used to examine the information output by Russian state medium RT Deutsch over the course of the campaign. It finds that over-coverage compared to established media – including negative one – is specifically directed at candidates that lead the polls at any point of the election. This result supports the proposed outputalienation-hypothesis, though variation between candidates cautions the interpretation of the findings. The analysis also suggests that the implications of the hypothesis, negative focus on (likely future) government figures, also extends after the election. To establish this extension empirically and to make sense of differences between candidates is left to future research.
 
 ### Contents:
 
@@ -81,37 +82,28 @@
             -   list *layers*, containing ggplot layers:
                 -   ...
 -   ***04_sentiment_analysis.R***
-        -   main output:
-            - 
     -   performs sentiment analysis
 -   ***04_additional_analysis.R***
     -   performs all types of descriptive statistic
--   ***FIX/DELETE**: broken/superseded files*
-    -   articles/old/factiva_data_candidate_articles.xlsx (broken date, no header)
-    -   articles/old/factiva_data_candidates_probably_wrong.xlsx (broken header)
-    -   ?/RT_articles_all.xlsx (only link/lead/header of 2400 articles)
-    -   articles/old/links_rt.csv (links to 5000 articles)
-    -   articles/old/RT_articles_more.xlsx (header/link/lead of 45 articles that were previously missed)
+
+-   ***05_main_analysis.R***
+    -   performs main graphical analyses
+
+-   ***06_regression.R***
+    -   performs multiple interrupted time-series regressions in various specifications
 
 ### ToDo list:
--   are there all analyses on candidate related articles only (by day, week, candidate, source + interactions) 
+-   sort & clean code -> clean replication data
 -   tokenize full candidate names as compound expression 
--   add plot layer with
+-   add plot layers with
     -   disinformation highlights
     -   individual article/mentions counts per newspaper
     -   aggregated article/mentions count
     -   sentiment scores!
-    -   ...?
 -   word_frequencies (aggregated by day/week, what else?)
 -   sentiment analyses (avg, binary for each doc, plot by c/d case)
-    -   decide whether to prefer mentions in context or full article sentiment
     -   compare results across dictionaries
-    -   include negation dictionary (before stop-word exclusion!)
-    -   plot/compare base sentiment over time
     -   plot/compare base sentiment to candidate sentiment over time (better  use headlines here to compare across sources)
--   analyse time-series
-    - read up on interrupted time-series analysis etc -> choose fitting model
--   finish paper (...there is also theory...)
 -   clean unnecessary stuff from 02_data_extraction_Factiva.R
 -   build replication scraper that uses saved .txt files
 -   improve scraping functions to make them publicly available
