@@ -284,6 +284,7 @@ RT_fulltexts <- rio::import("articles/data_rt.rds", )
 
 # get links from saved html 
 
+
 links_RT_all <- tibble(intextlinks = list(tibble(a = "a")), mehrlink = list(tibble(a = "a")), ID = 0)
 for(i in 1:length(RT_fulltexts$html_page)) {
   page <- RT_fulltexts$html_page[i] %>% read_html(encoding = "UTF-8")
