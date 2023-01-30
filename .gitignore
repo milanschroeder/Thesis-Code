@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 .Rdata
+*.tmp
 .httr-oauth
 .DS_Store
 Thesis Code.Rproj
@@ -17,3 +18,11 @@ analyses/JITP-Replication-Final/
 analyses/deu_news_2021-10K/
 00_failed_attempts.R
 01_scraping_FAZ.R
+.RDataTmp1
+RT_searches/
+articles/
+rt_archive/
+RT_searches/
+sitemaps/
+test/
+test*

@@ -50,6 +50,13 @@ diff_by_day %<>% mutate(period_red  = ifelse(period == "red_period", 1, 0),
 )
 
 
+# Summary statistics:
+(summary <- diff_by_day %>% summarize(across(.cols = c(N = N, N.relative = N_relative, mentions = mentions,  negative.mentions = negative_mentions, negative.article = negative_article, negative.headlead = negative_headlead, negative.binary.article.relative = negative_binary_article_relative, negative.binary.headlead.relative = negative_binary_headlead_relative,  negative.binary.strong.article.relative = negative_binary_strong_article_relative, negative.binary.strong.headlead.relative = negative_binary_strong_headlead_relative), 
+                                 .fns = list(mean = fmean, median = fmedian, sd = fsd, min  = fmin, max = fmax))) %>% 
+  pivot_longer(cols = everything(), names_sep = "_", names_to = c("Variable", "statistic")) %>% pivot_wider(names_from = "statistic", values_from = "value")
+)
+
+openxlsx::write.xlsx(summary, file = "analyses/summarystats", asTable = T)
 
 
 # regression: ####

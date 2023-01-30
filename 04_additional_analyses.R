@@ -2,6 +2,8 @@
 
 library(dplyr)
 
+
+
 # frequency of op-eds:
 # candidate related only
 all_sources_candidates %>% filter(source != "BILD") %>% group_by(source, resort) %>% summarise(N = n()) %>% arrange(desc(N))
