@@ -6,11 +6,18 @@
 
 ### Abstract:
 
-Election interferences by authoritarian states, most prominently Russia, have been grown to a major concern after their alleged contribution to populist victories. However, little is known about the effect of such influence operations. To assess their effectiveness and potential countermeasures, it is critical to understand what the goal and strategy behind such campaigns is. Besides partisan intervention, elections also provide opportunity for democracy-eroding interference. For such an intervention, the present paper discusses two ways of targeting political support in the sense of Easton (1975), by promoting political alienation (Gamson, 1968), focussing on the perception of either the input, or output of the democratic political system.
-The empirical part of the paper, tests for these strategies in the runup to the 2021 German federal election. Quantitative text analysis was used to examine the information output by Russian state medium RT Deutsch over the course of the campaign. It finds that over-coverage compared to established media – including negative one – is specifically directed at candidates that lead the polls at any point of the election. This result supports the proposed outputalienation-hypothesis, though variation between candidates cautions the interpretation of the findings. The analysis also suggests that the implications of the hypothesis, negative focus on (likely future) government figures, also extends after the election. To establish this extension empirically and to make sense of differences between candidates is left to future research.
+Election interferences by authoritarian states, most prominently Russia, have been grown to a major concern after their alleged contribution to populist victories. However, little is known about the effect of such influence operations. To assess their effectiveness and potential countermeasures, it is critical to understand what the goal and strategy behind such campaigns is. Besides partisan intervention, elections also provide opportunity for democracy-eroding interference. For such an intervention, the present paper discusses two ways of targeting political support in the sense of Easton (1975), by promoting political alienation (Gamson, 1968), focussing on the perception of either the input, or output of the democratic political system. The empirical part of the paper, tests for these strategies in the runup to the 2021 German federal election. Quantitative text analysis was used to examine the information output by Russian state medium RT Deutsch over the course of the campaign. It finds that over-coverage compared to established media – including negative one – is specifically directed at candidates that lead the polls at any point of the election. This result supports the proposed outputalienation-hypothesis, though variation between candidates cautions the interpretation of the findings. The analysis also suggests that the implications of the hypothesis, negative focus on (likely future) government figures, also extends after the election. To establish this extension empirically and to make sense of differences between candidates is left to future research.
 
 ### Contents:
 
+-   **00_RT_Scraper.R**
+    -   updated scraping functions:
+
+        -   more efficient
+
+        -   allows scraping full pages of all RT versions
+-   **99_scrape_RT_full.R**
+    -   scraping for *Russian Media Archive* Project, using 00_RT_Scraper.R
 -   ***01_scraping_Factiva.R***
     -   loads and converts newspaper articles from the Factiva Database
         -   outputs:
@@ -46,10 +53,7 @@ The empirical part of the paper, tests for these strategies in the runup to the 
     -   scrapes full texts from saved articles
         -   outputs:
             -   (**deprecated by RT_corpus** - file *articles/old/data_rt.rds*, a dataset of metadata, full texts, and html code of all article pages)
-
--   ***02_data_extraction_Factiva.R***
-        - main output:
-            - file *articles/corpus_factiva.RData*, containing R object *corpus_factiva*, *corpus_factiva_candidate*, *factiva_corpus*, and *factiva_corpus_candidate*
+-   ***02_data_extraction_Factiva.R*** - main output: - file *articles/corpus_factiva.RData*, containing R object *corpus_factiva*, *corpus_factiva_candidate*, *factiva_corpus*, and *factiva_corpus_candidate*
     -   gets tidy data (metadata and fulltext for candidate related articles) from Factivca
         -   outputs:
             -   file *articles/corpus_factiva.xlsx*, a dataset of metadata for all 190577 articles from 5 German newspapers published in 2021, and fulltexts for all 7892 articles mentioning at least one of the lead candidates
@@ -85,27 +89,7 @@ The empirical part of the paper, tests for these strategies in the runup to the 
     -   performs sentiment analysis
 -   ***04_additional_analysis.R***
     -   performs all types of descriptive statistic
-
 -   ***05_main_analysis.R***
     -   performs main graphical analyses
-
 -   ***06_regression.R***
     -   performs multiple interrupted time-series regressions in various specifications
-
-### ToDo list:
--   sort & clean code -> clean replication data
--   tokenize full candidate names as compound expression 
--   add plot layers with
-    -   disinformation highlights
-    -   individual article/mentions counts per newspaper
-    -   aggregated article/mentions count
-    -   sentiment scores!
--   word_frequencies (aggregated by day/week, what else?)
--   sentiment analyses (avg, binary for each doc, plot by c/d case)
-    -   compare results across dictionaries
-    -   plot/compare base sentiment to candidate sentiment over time (better  use headlines here to compare across sources)
--   clean unnecessary stuff from 02_data_extraction_Factiva.R
--   build replication scraper that uses saved .txt files
--   improve scraping functions to make them publicly available
--   clean folders
-
