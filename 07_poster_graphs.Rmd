@@ -1,0 +1,304 @@
+# polling trends:
+
+```{r}
+library(pacman)
+p_load(tidyverse, grid, ggnewscale, magrittr, lubridate)
+
+# import data: ####
+load("articles/RTcorpus.RData")
+load("polls/all_polls.RData")
+
+```
+
+
+prepare helpers
+```{r}
+partycolors <- c("green", "red", "black", "yellow", "brown", "purple", "gray")
+names(partycolors) <- c("gru", "spd", "cdu", "fdp", "afd", "lin", "oth")
+candidatecolors <- c("green", "red", "black")
+names(candidatecolors) <- c("baerbock", "scholz", "laschet")
+
+parties <- c("cdu", "spd", "gru", "lin", "fdp", "afd", "oth")
+
+```
+
+
+get leading periods for each party (leaving out transition periods)
+```{r}
+# define background areas
+rects_nogaps <- data.frame(ymin = rep(-100, 4), 
+                           ymax = rep(Inf, 4), 
+                           alpha = rep(.01, 4), 
+                           xmin = as.Date(c("2020-12-01", "2021-04-26", "2021-05-16", "2021-08-24")), 
+                           xmax = as.Date(c("2021-04-26", "2021-05-16", "2021-08-24", "2021-09-26")),
+                           fill = c("gray40", "greenyellow", "gray40", "lightcoral")
+)
+rects_gaps <- data.frame(ymin = rep(-100, 4), 
+                         ymax = rep(Inf, 4), 
+                         alpha = rep(.01, 4), 
+                         xmin = as.Date(c("2020-12-01", "2021-04-28", "2021-05-25", "2021-08-30")), 
+                         xmax = as.Date(c("2021-04-21", "2021-05-08", "2021-08-18", "2021-09-26")),
+                         fill = c("gray40", "greenyellow", "gray40", "lightcoral")
+)
+```
+
+
+## plotting:
+
+n### full polls of top3 parties
+```{r}
+(gg_leading_parties_trend <-
+ggplot(polls_long %>% filter(party %in% parties[1:3]), 
+       aes(colour = party, fill = party)) +
+  geom_line(aes(x = date, y = mean)) +
+#  geom_point(aes(x = date, y = percent)) +
+  geom_ribbon(aes(date, ymin = lower, ymax = upper, colour = NULL), alpha = .1) +
+  scale_fill_manual(aesthetics = c("colour", "fill"), values = partycolors[1:3]) +
+#  layers$background +
+#  coord_cartesian(ylim = c(0, 40)) + 
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")
+) # %>% ggplotly(gg_all_parties_poll)
+```
+
+
+### polls of all parties
+```{r warning=FALSE}
+p_load(EBImage, ggimage)
+
+polls_long %<>% mutate(images = case_when(
+  party == "gru" & date == as.Date("2021-09-24")  ~ "D:/OneDrive - Hertie School/Hertie/Thesis/Bundestagswahl 2021 — RT DE_files/Baerbock_portrait_hoch.png",
+  party == "spd" & date == as.Date("2021-09-24") ~ "D:/OneDrive - Hertie School/Hertie/Thesis/Bundestagswahl 2021 — RT DE_files/Scholz_portrait_hoch.png",
+  party == "cdu" & date == as.Date("2021-09-24") ~ "D:/OneDrive - Hertie School/Hertie/Thesis/Bundestagswahl 2021 — RT DE_files/Laschet_portrait_hoch.png"
+))
+
+(gg_all_parties_trend <-
+    ggplot(polls_long, 
+           aes(colour = party, fill = party)) +
+    geom_line(aes(x = date, y = mean), size = 2) +
+    geom_ribbon(aes(date, ymin = lower, ymax = upper, colour = NULL), alpha = .4) +
+  geom_image(aes(x = date, y = case_when(party == "spd" ~ mean + 2.5, 
+                                         party == "cdu" ~ mean - .5, 
+                                         TRUE ~ mean - .2), image = images, colour = NULL, fill = NULL), size = .08, fullpage = FALSE, scale_axes = TRUE, alpha = 1) +
+    scale_fill_manual(aesthetics = c("colour", "fill"), values = partycolors) +
+    coord_cartesian(ylim = c(5, 40)) + 
+    scale_x_date(date_breaks = "1 month", date_labels = "%b") +
+    labs(x = "", y = "polling numbers [%]") +
+    guides(fill = "none", colour = "none") +
+   theme_minimal()
+)
+
+ggsave("../Bundestagswahl 2021 — RT DE_files/candidate_trends.png", width = 2250, height = 900, units = "px")
+
+```
+
+
+
+```{r}
+# define layers to add to plots ####
+
+layers <- vector('list')
+layers$scalex <- scale_x_date(date_breaks = "1 month", date_labels = "%b")
+layers$partycolors_all <- scale_fill_manual(aesthetics = c("colour", "fill"), values = partycolors)
+layers$partycolors_three <- scale_fill_manual(aesthetics = c("colour", "fill"), values = partycolors[1:3])
+layers$candidatecolors <- scale_fill_manual(aesthetics = c("colour", "fill"), values = candidatecolors)
+layers$background <- geom_rect(data = rects_nogaps, mapping = aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = list("gray40", "greenyellow", "gray40", "lightcoral"), alpha = .01), show.legend = F)
+layers$background_gaps <- geom_rect(data = rects_gaps, mapping = aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = list("gray40", "greenyellow", "gray40", "lightcoral"), alpha = .1), show.legend = F)
+layers$newscale_fill <- ggnewscale::new_scale_fill()
+layers$newscale_colour <- ggnewscale::new_scale_colour()
+layers$trendline_three <- geom_line(data = polls_long %>% filter(party %in% parties[1:3]), mapping = aes(colour = party, x = date, y = mean))
+layers$trends_ci_three <- geom_ribbon(data = polls_long %>% filter(party %in% parties[1:3]), mapping = aes(fill = party, x = date, ymin = lower, ymax = upper, colour = NULL), alpha = .2)
+layers$articles_RT_candidates_n <- geom_smooth(data = summariesRT_long %>% filter(candidate != "all"), mapping = aes(x = date, y = articles, colour = candidate), se = F)
+layers$articles_RT_candidates_perc <- geom_smooth(data = summariesRT_long %>% filter(candidate != "all"), mapping = aes(x = date, y = share, colour = candidate), se = F)
+# producing graph backgrounds ####  
+
+# leaving gaps where close
+(gg_leading_party_background_gaps <- 
+  ggplot() + 
+  layers$background_gaps
+)
+
+# until clearly passed
+(gg_leading_party_background <- 
+  ggplot() +
+  layers$background
+)
+```
+
+
+
+### RT articles mentioning candidates over time:
+```{r}
+library(ggnewscale) 
+
+gg_leading_party_background +
+   new_scale_fill() +
+   layers$candidatecolors +
+  layers$scalex +
+  layers$articles_candidates_n +
+  # useful to make this a layer? 
+  geom_smooth(data = summariesRT_long %>% filter(candidate == "all"), 
+           mapping = aes(x = as.Date(date), y = articles), colour = "grey", linetype = "longdash") +
+  coord_cartesian(ylim = c(0,3))
+  
+  # share of articles mentioning candidates (aka zooming in)
+  gg_leading_party_background +
+    new_scale_fill() +
+    layers$articles_candidates_perc +
+    coord_cartesian(ylim = c(0,.1)) +
+    layers$candidatecolors
+#  geom_smooth(data = summariesRT_long %>% filter(candidate != "all"), mapping = aes(x = date, y = share, colour = candidate), se = F)
+
+```
+
+
+
+
+# negativity distribution:
+(gg_sent_score_text_source <- 
+analysis_candidate_data %>% 
+  ggplot() +
+  geom_hline(aes(yintercept = 0)) +
+  geom_violin(aes(x = source, y = article_sent_article, fill = source), scale = "count", draw_quantiles = .5, show.legend = F) +
+  labs(x = "", y = "Sentiment score") +
+  theme_minimal()
+)
+
+
+(gg_sent_score_headlead_source <- 
+  analysis_data %>% 
+  ggplot() +
+  geom_hline(aes(yintercept = 0)) +
+  geom_violin(aes(x = source, y = article_sent_headlead, fill = source), scale = "count", draw_quantiles = .5, show.legend = F) + 
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = "", y = "Sentiment score") +
+  theme_minimal()
+)
+  
+# time-series (average sentiment, pos/neg-classification per period)
+
+Difference:
+```{r}
+load("analyses/diff_by_day.RData")
+
+diff_by_day %<>% mutate(period_red  = ifelse(period == "red_period", 1, 0),
+                        period_green  = ifelse(period == "green_period", 1, 0),
+                        period_black  = ifelse(period == "black_period", 1, 0), 
+                        pre_campaign = ifelse(as.Date(date, origin = as.Date("2021-01-01")) < as.Date("2021-04-19"), 1, 0),
+                        post_campaign = ifelse(as.Date(date, origin = as.Date("2021-01-01")) > as.Date("2021-09-26"), 1, 0),
+                        date = as.numeric(date - min(date)), 
+                        own_period = case_when(candidatename == "baerbock" & period_green == 1 ~ 1,
+                                               candidatename == "scholz" & period_red == 1 ~ 1,
+                                               candidatename == "laschet"  & period_black == 1 ~ 1, 
+                                               TRUE ~ 0),
+                        
+                        rank_top = case_when(candidatename == "baerbock" & rank_gru == 1 ~ 1,
+                                             candidatename == "scholz" & rank_spd == 1 ~ 1,
+                                             candidatename == "laschet" & rank_cdu == 1 ~ 1,  
+                                             TRUE ~ 0),
+                        
+                        
+                        gru_spd = share_gru - share_spd,
+                        gru_cdu = share_gru - share_cdu,
+                        spd_cdu = share_spd - share_cdu,
+                        
+                        rank_top2 = case_when(candidatename == "baerbock" & rank_gru < 3 ~ 1,
+                                              candidatename == "scholz" & rank_spd < 3 ~ 1,
+                                              candidatename == "laschet"  & rank_cdu < 3 ~ 1,
+                                              candidatename == "baerbock" & is.na(rank_gru) ~ NaN,
+                                              candidatename == "scholz" & is.na(rank_spd) ~ NaN,
+                                              candidatename == "laschet"  & is.na(rank_cdu) ~ NaN,
+                                              TRUE ~ 0),
+                        
+                        relative_share = case_when(candidatename == "baerbock" ~ gru_cdu + gru_spd,
+                                                   candidatename == "scholz" ~ spd_cdu + spd_gru,
+                                                   candidatename == "laschet" ~ cdu_gru + cdu_spd, 
+                                                   TRUE ~ NaN
+                        ),
+                        
+                        candidatename = factor(candidatename, levels = c( "none", "scholz", "laschet", "baerbock")),
+                        
+                        baerbock = ifelse(candidatename == "baerbock", 1, 0),
+                        laschet = ifelse(candidatename == "laschet", 1, 0),
+                        scholz = ifelse(candidatename == "scholz", 1, 0)
+                        
+)
+```
+
+
+plot it:
+
+```{r warning=FALSE}
+diff_by_day %>% filter(candidatename != "none") %>% 
+  ggplot(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = overall_sent, 
+             colour = factor(own_period))) +
+  geom_smooth(formula = "y ~ poly(x, 2)")
+
+diff_by_day %>% filter(candidatename != "none") %>% 
+  ggplot(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = N, 
+             colour = factor(own_period))) +
+  geom_smooth(formula = "y ~ poly(x, 2)")
+
+diff_by_day %>% filter(candidatename != "none") %>% 
+  ggplot(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = .$negative_binary_article_relative, 
+             colour = factor(own_period))) +
+  geom_smooth(formula = "y ~ poly(x, 2)")
+
+
+diff_by_day %>% filter(candidatename != "none") %>% group_by(own_period) %>%  
+  ggplot(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = .$negative_count_article, 
+             colour = factor(rank_top))) +
+  geom_smooth(formula = "y ~ poly(x, 2)") +
+  geom_point(alpha = .1) 
+
+# +  coord_cartesian(ylim = c(-1, 1))
+
+
+
+gg_leading_party_background +
+  geom_smooth(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = negative_mentions, 
+             colour = factor(rank_top)),
+             se = FALSE, formula = "y ~ poly(x, 2)",
+             data = diff_by_day %>% filter(candidatename != "none" & pre_campaign == 0 & post_campaign == 0) %>% group_by(own_period)) +
+  geom_point(alpha = .1) +
+   scale_x_date(date_breaks = "1 month", date_labels = "%b") +
+    labs(x = "", y = "over-coverage (mentions in negative context)", colour = "Leading candidate") +
+    theme_minimal() +  
+  coord_cartesian(ylim = c(-21, 3), xlim = c(as.Date("2021-04-26"), as.Date("2021-09-26")))
+
+
+gg_leading_party_background +
+  ggnewscale::new_scale_color() +
+  geom_smooth(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = negative_mentions, 
+             colour = factor(candidatename)), 
+             se = FALSE, formula = "y ~ poly(x, 2)",
+             size = 1.5,
+             data = diff_by_day %>% filter(candidatename != "none" & pre_campaign == 0 & post_campaign == 0 & negative_mentions != 0) %>% group_by(candidatename)) +
+  geom_point(aes(x = as.Date(date, origin = "2021-01-04"), 
+             y = negative_mentions, 
+             colour = factor(candidatename)), 
+             alpha = .2, 
+             size = 1.5,
+             data = diff_by_day %>% filter(candidatename != "none" & pre_campaign == 0 & post_campaign == 0 & negative_mentions != 0) %>% group_by(candidatename)) +  
+  scale_fill_manual(aesthetics = c("colour"), values = candidatecolors[1:3]) +
+  coord_cartesian(ylim = c(-21, 3), xlim = c(as.Date("2021-04-26"), as.Date("2021-09-26"))) +
+  labs(x="", y="Difference in negative \ndaily candidate mentions") +
+  guides (colour = "none") +
+  theme_minimal()
+ggsave("../Bundestagswahl 2021 — RT DE_files/reporting_trends.png", width = 2250, height = 900, units = "px")
+
+  
+```
+
+  
+
+
+
+
+
+

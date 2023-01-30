@@ -240,7 +240,7 @@ analysis_candidate_data_long %<>% bind_rows(., filler) %>% distinct()
 byday_all <- collapse::collap(analysis_data %>% mutate(articles_per_day = 1) %>% 
                                 select(doc_id, date, source_bin, source,  period, leader, starts_with("n_"), contains("count"), contains("binary"), contains("mention"), everything()), 
                           ~ date + source, 
-                          custom = list(fmean = 7:71, fsum = 72)
+                          custom = list(fmean = 7:75, fsum = 76)
 ) %>% 
   mutate(overall_sent = log((positive_count_article/(positive_count_article + negative_count_article) + 0.5) / 
                               (negative_count_article/(positive_count_article + negative_count_article) + 0.5)),
@@ -289,9 +289,10 @@ byday <- collapse::collap(analysis_candidate_data_long,
   mutate(N = ifelse(is.na(N), 0, N),
          overall_sent = log((positive_count_article/(positive_count_article + negative_count_article) + 0.5) / 
                               (negative_count_article/(positive_count_article + negative_count_article) + 0.5))
-         ) %>% 
+         )
+byday %<>% 
   left_join(., byday_all %>% group_by(source_bin, date) %>% summarize(articles_per_day_bin = sum(articles_per_day)) %>% ungroup(), 
-            by = c("source_bin", "date")) %>% left_join(., byday %>% mutate(across(contains(c("negative_strong", "negative_binary")), .fns = ~ .x / articles_per_day_bin)) %>% 
+            by = c("source_bin", "date")) %>% left_join(byday %>% mutate(., across(contains(c("negative_strong", "negative_binary")), .fns = ~ .x / articles_per_day_bin)) %>% 
               select("source_bin", "date", "candidatename", contains(c("negative_strong", "negative_binary"))),
             by = c("source_bin", "date", "candidatename"),
             suffix = c("", "_relative")
