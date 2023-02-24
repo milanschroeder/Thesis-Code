@@ -168,7 +168,7 @@ n_distinct(c(new_URLs, RT_archive_partly$link))
 # list of base sitemap URLs:
 sitemap_versions <- tribble(
   ~version, ~link,
-  # "bk", "https://rt.rs/...,
+  "bk", "https://rt.rs/sitemap.xml",      # add "lat." for non-kyrillic version
   "de", "https://deutsch.rt.com/sitemap.xml",
   "en", "https://swentr.site/sitemap.xml",
   "fr", "https://francais.rt.com/sitemap.xml",
@@ -262,7 +262,6 @@ if (!dir.exists("sitemaps")) {
 # end of old stuff 
 
 # function to scrape, but preferable to use loop:
-updated_locs <- updated_sitemaps %>% select(loc) %>% as_vector()
 get_urls_sitemap <- function(sitemap){
   sitemap_year <- tibble(loc = rvest::read_html(sitemap) %>% html_elements("loc") %>% html_text2(),
                          lastmod_utc = rvest::read_html(sitemap) %>% html_elements("lastmod") %>% lubridate::ymd_hms(tz = "UTC"),
@@ -272,6 +271,8 @@ get_urls_sitemap <- function(sitemap){
   return(sitemap_year)
   Sys.sleep(.5)
 }
+
+updated_locs <- updated_sitemaps %>% select(loc) %>% as_vector()
 article_links <- map_dfr(updated_locs, get_urls_sitemap)
 
 # as loop
@@ -286,6 +287,8 @@ for (i in 1:nrow(updated_sitemaps)) {
   )  
  sitemaps <- bind_rows(sitemaps, sitemap_tmp)
 }
+
+# ToDo: compare to lastscrape -> filter
 
 sitemaps <- sitemaps_all
 save(sitemaps, sitemap_base_archived, file = "sitemaps/sitemaps_crawl.RData")
