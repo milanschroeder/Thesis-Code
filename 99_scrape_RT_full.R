@@ -178,7 +178,7 @@ sitemap_versions <- tribble(
 )
 
 # load results of last scrape:
-load("sitemaps/sitemaps_crawl.RData")
+load("ignore/sitemaps/sitemaps_crawl.RData")
 
 # get time of last scrape:
 lastscrape <- if (exists("sitemap_base_archived")) {
@@ -291,5 +291,78 @@ for (i in 1:nrow(updated_sitemaps)) {
 # ToDo: compare to lastscrape -> filter
 
 sitemaps <- sitemaps_all
-save(sitemaps, sitemap_base_archived, file = "sitemaps/sitemaps_crawl.RData")
+save(sitemaps, sitemap_base_archived, file = "ignore/sitemaps/sitemaps_crawl.RData")
 write.csv(sitemaps, "sitemaps/crawled_urls.csv")
+
+# write sitemaps to SQL Database:
+pacman::p_load(DBI, RSQLite, dplyr)
+RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") # connect with SQLite (if not existent, builds new DB)
+DBI::dbWriteTable(conn = RT_DB, name = "base_sitemaps", value = sitemap_base_archived,
+                  field.types = c(
+                    loc = "TEXT",
+                    lastmod = "DATE",
+                    last_scrape = "TIMESTAMP",
+                    version = "TEXT"
+                  ))
+
+DBI::dbWriteTable(conn = RT_DB, name = "sitemaps", value = sitemaps,
+                  field.types = c(
+                    loc = "TEXT",
+                    lastmod_utc = "TIMESTAMP",
+                    lastmod_tz = "TEXT",
+                    last_scrape = "TIMESTAMP",
+                    language = "TEXT"
+                  ))
+DBI::dbListTables(conn = RT_DB) 
+
+# check Date Format?!?
+# for datetimes (lastscrape, lastmod)
+lubridate::as_datetime(lastscrape, origin = "1970-01-01 00:00:00 UTC")
+# for Dates (lastmod)
+lubridate::as_date(lastmod, origin = "1970-01-01 00:00:00 UTC")
+
+# test reading from DB:
+RT_DB %>% DBI::dbListFields("base_sitemaps")
+RT_DB %>% DBI::dbReadTable("sitemaps")
+
+
+
+# old stuff #############
+# sitemaps <- sitemaps_all
+# save(sitemaps, sitemap_base_archived, file = "ignore/sitemaps/sitemaps_crawl.RData")
+# write.csv(sitemaps, "sitemaps/crawled_urls.csv")
+
+
+
+# initial push (data scraped before) ####
+# write sitemaps to SQL Database:
+# DBI::dbWriteTable(conn = RT_DB, name = "base_sitemaps", 
+#                   value = sitemap_base_archived %>% mutate(across(.cols = !is.character, as.character)),
+#                   field.types = c(
+#                     loc = "TEXT",
+#                     lastmod = "DATE",
+#                     last_scrape = "TIMESTAMP",
+#                     version = "TEXT"
+#                   ))
+# 
+# DBI::dbWriteTable(conn = RT_DB, name = "sitemaps", 
+#                   value = sitemaps %>% mutate(across(.cols = !is.character, as.character)),
+#                   field.types = c(
+#                     loc = "TEXT",
+#                     lastmod_utc = "TIMESTAMP",
+#                     lastmod_tz = "TEXT",
+#                     last_scrape = "TIMESTAMP",
+#                     language = "TEXT"
+#                   ))
+# DBI::dbListTables(conn = RT_DB) 
+# 
+# Date Format without string conversion:
+# for datetimes (lastscrape, lastmod)
+# lubridate::as_datetime(lastscrape, origin = "1970-01-01 00:00:00 UTC")
+# for Dates (lastmod)
+# lubridate::as_date(lastmod, origin = "1970-01-01 00:00:00 UTC")
+
+# test reading from DB:
+# RT_DB %>% DBI::dbListFields("base_sitemaps")
+# RT_DB %>% DBI::dbReadTable("sitemaps")
+
