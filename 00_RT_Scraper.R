@@ -733,7 +733,7 @@ scrape_and_save <- function(linklist,
 # add try catch and record as deleted
   try(html_page <- read_html(full_link))    
     
-  if (class(html_page) == "try-error") {
+  if ("try-error" %in% class(html_page)) {
     
     # insert df_row for articles no longer online 
     if (nested == T) {

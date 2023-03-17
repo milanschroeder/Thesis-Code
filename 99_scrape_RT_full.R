@@ -366,3 +366,7 @@ RT_DB %>% DBI::dbReadTable("sitemaps")
 # RT_DB %>% DBI::dbListFields("base_sitemaps")
 # RT_DB %>% DBI::dbReadTable("sitemaps")
 
+
+
+
+
