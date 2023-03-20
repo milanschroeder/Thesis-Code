@@ -222,60 +222,66 @@ scrape_pages <- function(pages_list = updated_pages, sleeptime = .5){
     
   # select version specific scraper:
     if(pages_list$version[i] %in%  c("bk", "bk-lat")) {
-      
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+
+      if(!"try-error" %in% class(try(scraper_bk(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
         }
+   
     } else if(pages_list$version[i] == "de") {
       
       if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
-        }
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
+      }
+      
     } else if(pages_list$version[i] == "es") {
       
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+      if(!"try-error" %in% class(try(scraper_es(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
-        }
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
+      }
+      
     } else if(pages_list$version[i] == "en") {
       
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+      if(!"try-error" %in% class(try(scraper_en(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
-        }
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
+      }
+      
     } else if(pages_list$version[i] == "fr") {
       
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+      if(!"try-error" %in% class(try(scraper_fr(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
-        }
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
+      }
+      
     } else if(pages_list$version[i] == "ru") {
       
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+      if(!"try-error" %in% class(try(scraper_ru(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
-        }
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
+      }
+      
     } else { # if(pages_list$version[i] == "ar"){
       
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved", sep = " ") # print in every run?
+      if(!"try-error" %in% class(try(scraper_ar(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
+        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
       } else {
         catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], sep = " ") # print in every run?
+        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
         }
     }
     
@@ -295,7 +301,7 @@ scraper_bk <- function(link, version, con = RT_DB){
   pacman::p_load(tidyverse, DBI, RSQLite)
   
   # get page:
-  base_url <- "https://rt.rs"
+  base_url <- ifelse(version == "bk", "https://rt.rs", "https://lat.rt.rs")
   doc <- rvest::read_html(link)    
   capture_time <- Sys.time()
   html_doc <- toString(doc)
@@ -355,7 +361,7 @@ scraper_bk <- function(link, version, con = RT_DB){
     doc_hash = doc_hash
 
   ) # end of main df
-# push to DB  
+  # push to DB  
   DBI::dbWriteTable(conn = con, name = "page_data", 
                     value = page_data %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
@@ -371,7 +377,7 @@ scraper_bk <- function(link, version, con = RT_DB){
     # alternatively: create dictionary to safe space
   # push to DB
   DBI::dbWriteTable(conn = con, name = "category_list", 
-                    value = updated_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    value = category_list %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
   ) 
   
@@ -399,11 +405,11 @@ intext_links <- tibble(
                         ),
   intext_link_text = doc %>% html_nodes(".ViewText-root a") %>% html_text2()
   )
-# push to DB
-DBI::dbWriteTable(conn = con, name = "intext_links", 
-                  value = intext_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                  append = TRUE
-) 
+  # push to DB
+  DBI::dbWriteTable(conn = con, name = "intext_links", 
+                    value = intext_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
  
   recommendations_main <- tibble(
     doc_hash = doc_hash,
@@ -527,7 +533,11 @@ scraper_de <- function(link, version, con = RT_DB){
     doc_hash = doc_hash,
     html_doc = html_doc
   )
-  # To Do: push to DB 
+  # push to DB 
+  DBI::dbWriteTable(conn = con, name = "html_pages", 
+                    value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
   
   # main df:
   page_data <- tibble(
@@ -562,7 +572,11 @@ scraper_de <- function(link, version, con = RT_DB){
     doc_hash = doc_hash
     
   ) # end of main df
-  # ToDo: push to DB  
+  # push to DB  
+  DBI::dbWriteTable(conn = con, name = "page_data", 
+                    value = page_data %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  )
   
   
   # category_list df: 
@@ -574,6 +588,11 @@ scraper_de <- function(link, version, con = RT_DB){
   )
   # alternatively: create dictionary to safe space
   # push to DB
+  DBI::dbWriteTable(conn = con, name = "category_list", 
+                    value = category_list %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
+  
   
   # tag_list df: 
   tag_list <- tibble(
@@ -584,7 +603,12 @@ scraper_de <- function(link, version, con = RT_DB){
   )
   # alternatively create dictionary to safe space
   # push to DB
+  DBI::dbWriteTable(conn = con, name = "tag_list", 
+                    value = tag_list %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
   
+  # intext_links df:
   intext_links <- tibble(
     doc_hash = doc_hash,
     intext_link_url = ifelse(doc %>% html_nodes(".ViewText-root a") %>% html_attr("href") %>% str_starts("/"),
@@ -593,7 +617,13 @@ scraper_de <- function(link, version, con = RT_DB){
     ),
     intext_link_text = doc %>% html_nodes(".ViewText-root a") %>% html_text2()
   )
+  # push to DB
+  DBI::dbWriteTable(conn = con, name = "intext_links", 
+                    value = intext_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
   
+  # recommendations_main df:
   recommendations_main <- tibble(
     doc_hash = doc_hash,
     main_recommendations_url = doc %>% html_elements("strong+ a") %>% html_attr("href"),
@@ -601,8 +631,13 @@ scraper_de <- function(link, version, con = RT_DB){
     main_recommendations_img = NA,
     main_recommendations_alt = NA
   )
+  # push to DB
+  DBI::dbWriteTable(conn = con, name = "recommendations_main", 
+                    value = recommendations_main %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
   
-  
+  # recommendations_embedded df:
   recommendations_embedded <- tibble(
     doc_hash = doc_hash,
     recommendation_embedded_thumbnail = doc %>% html_elements(".ReadMore-root .Picture-root img") %>% html_attr("data-src"),
@@ -611,14 +646,25 @@ scraper_de <- function(link, version, con = RT_DB){
                                           stringr::str_c(base_url, doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")),
                                           NA)
   )
+  # push to DB
+  DBI::dbWriteTable(conn = con, name = "recommendations_embedded", 
+                    value = recommendations_embedded %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
   
+  
+  # images df:
   images <- tibble(
     doc_hash = doc_hash,
     image_url = doc %>% html_elements(".RTImage-image.RTImage-original picture img") %>% html_attr("data-src"),
     image_caption = doc %>% html_elements(".RTImage-caption") %>% html_text2(),
     image_source = doc %>% html_elements(".RTImage-source") %>% html_text2()
   )
-
+  # push to DB
+  DBI::dbWriteTable(conn = con, name = "images", 
+                    value = images %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  ) 
   
   
   # Embeddings:  
@@ -671,6 +717,11 @@ scraper_de <- function(link, version, con = RT_DB){
   
   embeddings <- rbind(youtube_embeddings, twitter_embeddings, odysee_embeddings, telegram_embeddings, vk_embeddings, podbean_embeddings) # %>% unique()
 
+  # push to DB
+  DBI::dbWriteTable(conn = con, name = "embeddings", 
+                    value = embeddings %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  )
 }
 
 # RT espanol:
@@ -680,17 +731,17 @@ scraper_es <- function(link, version, con = RT_DB){
 
 # RT english:
 scraper_en <- function(link, version, con = RT_DB){
-  
+  # ~ scraper_fr ~ scraper_ru
 }
 
 #RT francais: 
 scraper_fr <- function(link, version, con = RT_DB){
-  
+  # ~ scraper_en ~ scraper_ru
 }
 
 # RT russian:
 scraper_ru <- function(link, version, con = RT_DB){
-  
+  # ~ scraper_fr ~ scraper_en
 }
 
 # RT arabic:
