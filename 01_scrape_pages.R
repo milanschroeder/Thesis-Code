@@ -282,6 +282,7 @@ scrape_pages <- function(pages_list = updated_pages, sleeptime = .5){
     
     # sleep:
     Sys.sleep(sleeptime)
+    cat(i, ":", Sys.time(), pages_list$loc[i], "saved.\n", sep = " ")
     
   } # end of loop
   
@@ -293,7 +294,7 @@ scrape_pages <- function(pages_list = updated_pages, sleeptime = .5){
 # RT Balkan:
 scraper_bk <- function(link, version, con = RT_DB){
   
-  pacman::p_load(tidyverse, DBI, RSQLite)
+  pacman::p_load(tidyverse, DBI, RSQLite, rvest)
   
   # get page:
   base_url <- ifelse(version == "bk", "https://rt.rs", "https://lat.rt.rs")
@@ -329,7 +330,7 @@ if("try-error" %in% class(
   
 # main df:
   page_data <- tibble(
-    header = doc %>% html_elements(xpath = "//meta[@property='og:title']") %>% html_attr("content"), 
+    header = doc %>% html_elements(xpath = "//meta[@property='og:title']") %>% rvest::html_attr("content"), 
     # or use header = doc %>% html_elements(., ".HeadLine-type_2") %>% html_text2() %>% stringr::str_c(., collapse = " ")
     link = link,
     version = version,
