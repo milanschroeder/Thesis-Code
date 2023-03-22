@@ -227,12 +227,7 @@ scrape_pages <- function(pages_list = updated_pages, sleeptime = .5){
       
     } else if(pages_list$version[i] == "de") {
       
-      if(!"try-error" %in% class(try(scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)))) {
-        cat(i, ":", Sys.time(), pages_list$loc[i], "successfully saved.\n", sep = " ") # print in every run?
-      } else {
-        catch_not_captured(pages_list$loc[i], pages_list$version[i], RT_DB)
-        cat(i, ":", Sys.time(), "failed to save", pages_list$loc[i], "\n", sep = " ") # print in every run?
-      }
+      scraper_de(pages_list$loc[i], pages_list$version[i], RT_DB)
       
     } else if(pages_list$version[i] == "es") {
       
@@ -634,34 +629,45 @@ if("try-error" %in% class(
 
 # RT Deutsch:
 scraper_de <- function(link, version, con = RT_DB){
-  pacman::p_load(tidyverse, rvest)
   
-  # try and record as missing if not available
-  try(doc <- rvest::read_html(link))    
+  pacman::p_load(tidyverse, DBI, RSQLite, rvest)
   
+  # get page:
   base_url <- "https://de.rt.com"
-  html_doc <- toString(doc)
-  doc_hash <- rlang::hash(html_doc)
-  capture_time <- Sys.time()
+ 
+  # try and record as missing if not available
+if("try-error" %in% class(
+    doc <- try(rvest::read_html(link)    
+))) {
   
-  if ("try-error" %in% class(doc)){
-    catch_deleted(link, version, capture_time)
-  }
+  catch_not_captured(link, version, con)
+  cat(Sys.time(), "failed to save", link, "(main)", "\n", sep = " ")
+  # write in logfile:
+  write(x = paste(Sys.time(), link, "main",  sep = ", "), 
+        file = "ignore/scrape_log.txt", append = T, sep = "\n")
+
+  } else{ # if page available
+    
+    capture_time <- Sys.time()
+    html_doc <- toString(doc)
+    doc_hash <- rlang::hash(html_doc)
+    
+ 
+# get page_data:
   
-  # get page_data:
+    # save full html:
+    html_pages <- tibble(
+      link = link,
+      doc_hash = doc_hash,
+      html_doc = html_doc
+    )
+    # push to DB 
+    DBI::dbWriteTable(conn = con, name = "html_pages", 
+                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
   
-  # save full html seperately:
-  html_pages <- tibble(
-    link = link,
-    doc_hash = doc_hash,
-    html_doc = html_doc
-  )
-  # push to DB 
-  DBI::dbWriteTable(conn = con, name = "html_pages", 
-                    value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
-  
+    
   # main df:
   page_data <- tibble(
     header = doc %>% html_elements(xpath = "//meta[@property='og:title']") %>% html_attr("content"), 
@@ -703,149 +709,267 @@ scraper_de <- function(link, version, con = RT_DB){
   
   
   # category_list df: 
-  category_list <- tibble(
-    doc_hash = doc_hash,
-    category_text = doc %>% html_elements(., ".RTLink-root.RTLink-breadcrumb") %>% html_text2(),
-    category_url = paste0(base_url, doc %>% html_nodes(., ".RTLink-root.RTLink-breadcrumb") %>% html_attr("href")),
-    version = version
-  )
+  if("try-error" %in% class(
+    category_list <- try(tibble(
+      doc_hash = doc_hash,
+      category_text = doc %>% html_elements(., ".RTLink-root.RTLink-breadcrumb") %>% html_text2(),
+      category_url = paste0(base_url, doc %>% html_nodes(., ".RTLink-root.RTLink-breadcrumb") %>% html_attr("href")),
+      version = version
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(category_list)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "category_list",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
   # alternatively: create dictionary to safe space
   # push to DB
   DBI::dbWriteTable(conn = con, name = "category_list", 
                     value = category_list %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
   ) 
+  } # end of category-error handling
   
   
   # tag_list df: 
-  tag_list <- tibble(
-    doc_hash = doc_hash,
-    tag_name = doc %>% html_elements(".Tags-link") %>% html_text2(),
-    tag_url = paste0(base_url, doc %>% html_nodes(".Tags-link") %>% html_attr("href")),
-    version = version
-  )
-  # alternatively create dictionary to safe space
-  # push to DB
-  DBI::dbWriteTable(conn = con, name = "tag_list", 
-                    value = tag_list %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
+  if("try-error" %in% class(
+    tag_list <- try(tibble(
+      doc_hash = doc_hash,
+      tag_name = doc %>% html_elements(".Tags-link") %>% html_text2(),
+      tag_url = paste0(base_url, doc %>% html_nodes(".Tags-link") %>% html_attr("href")),
+      version = version
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(tag_lists)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "tag_lists",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
+    
+    # alternatively create dictionary to safe space
+    # push to DB
+    DBI::dbWriteTable(conn = con, name = "tag_list", 
+                      value = tag_list %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
+  } # end of tag-error handling
   
-  # intext_links df:
-  intext_links <- tibble(
-    doc_hash = doc_hash,
-    intext_link_url = ifelse(doc %>% html_nodes(".ViewText-root a") %>% html_attr("href") %>% str_starts("/"),
-                             paste0(base_url, doc %>% html_nodes(".ViewText-root a") %>% html_attr("href")),
-                             doc %>% html_nodes(".ViewText-root a") %>% html_attr("href")
-    ),
-    intext_link_text = doc %>% html_nodes(".ViewText-root a") %>% html_text2()
-  )
-  # push to DB
-  DBI::dbWriteTable(conn = con, name = "intext_links", 
-                    value = intext_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
   
-  # recommendations_main df:
-  recommendations_main <- tibble(
-    doc_hash = doc_hash,
-    main_recommendations_url = doc %>% html_elements("strong+ a") %>% html_attr("href"),
-    main_recommendations_title = doc %>% html_elements("strong+ a") %>% html_text2(),
-    main_recommendations_img = NA,
-    main_recommendations_alt = NA
-  )
-  # push to DB
-  DBI::dbWriteTable(conn = con, name = "recommendations_main", 
-                    value = recommendations_main %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
+  if("try-error" %in% class(
+    intext_links <- try(tibble(
+      doc_hash = doc_hash,
+      intext_link_url = ifelse(doc %>% html_nodes(".ViewText-root a") %>% html_attr("href") %>% str_starts("/"),
+                               paste0(base_url, doc %>% html_nodes(".ViewText-root a") %>% html_attr("href")),
+                               doc %>% html_nodes(".ViewText-root a") %>% html_attr("href")
+      ),
+      intext_link_text = doc %>% html_nodes(".ViewText-root a") %>% html_text2()
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(intext_links)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "intext_links",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
+    
+    # push to DB
+    DBI::dbWriteTable(conn = con, name = "intext_links", 
+                      value = intext_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
+  }
   
-  # recommendations_embedded df:
-  recommendations_embedded <- tibble(
-    doc_hash = doc_hash,
-    recommendation_embedded_thumbnail = doc %>% html_elements(".ReadMore-root .Picture-root img") %>% html_attr("data-src"),
-    recommendation_embedded_title = doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_text2(),
-    recommendation_embedded_url = ifelse(stringr::str_length(doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")) > 0,
-                                          stringr::str_c(base_url, doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")),
-                                          NA)
-  )
+  
+  if("try-error" %in% class(
+    recommendations_main <- try(tibble(
+      doc_hash = doc_hash,
+      main_recommendations_url = doc %>% html_elements("strong+ a") %>% html_attr("href"),
+      main_recommendations_title = doc %>% html_elements("strong+ a") %>% html_text2(),
+      main_recommendations_img = NA,
+      main_recommendations_alt = NA
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(recommendations_main)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "recommendations_main",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
+    # push to DB
+    DBI::dbWriteTable(conn = con, name = "recommendations_main", 
+                      value = recommendations_main %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
+  }
+  
+  
+  
+  if("try-error" %in% class(
+    recommendations_embedded <- try(tibble(
+      doc_hash = doc_hash,
+      recommendation_embedded_thumbnail = doc %>% html_elements(".ReadMore-root .Picture-root img") %>% html_attr("data-src"),
+      recommendation_embedded_title = doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_text2(),
+      recommendation_embedded_url = ifelse(stringr::str_length(doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")) > 0,
+                                            stringr::str_c(base_url, doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")),
+                                            NA)
+    )
+    
   # push to DB
   DBI::dbWriteTable(conn = con, name = "recommendations_embedded", 
                     value = recommendations_embedded %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
   ) 
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(recommendations_embedded)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "recommendations_embedded",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
+    # push to DB
+    DBI::dbWriteTable(conn = con, name = "recommendations_embedded", 
+                      value = recommendations_embedded %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
+  }
   
   
-  # images df:
-  images <- tibble(
-    doc_hash = doc_hash,
-    image_url = doc %>% html_elements(".RTImage-image.RTImage-original picture img") %>% html_attr("data-src"),
-    image_caption = doc %>% html_elements(".RTImage-caption") %>% html_text2(),
-    image_source = doc %>% html_elements(".RTImage-source") %>% html_text2()
-  )
-  # push to DB
-  DBI::dbWriteTable(conn = con, name = "images", 
-                    value = images %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
+  
+  if("try-error" %in% class(
+    images <- try(tibble(
+      doc_hash = doc_hash,
+      image_url = doc %>% html_elements(".RTImage-image.RTImage-original picture img") %>% html_attr("data-src"),
+      image_caption = doc %>% html_elements(".RTImage-caption") %>% html_text2(),
+      image_source = doc %>% html_elements(".RTImage-source") %>% html_text2()
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(images)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "images",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
+    # push to DB
+    DBI::dbWriteTable(conn = con, name = "images", 
+                      value = images %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
+  }
   
   
   # Embeddings:  
-  youtube_embeddings <- tibble(
-    doc_hash = doc_hash,
-    embedding_url = if (length(doc %>% html_elements(".YouTubeEmbed") %>% html_attr("id")) > 0) {
-      paste0("https://www.youtube.com/embed/", doc %>% html_elements(".YouTubeEmbed") %>% html_attr("id"))   
-    } else{doc %>% html_elements(".YouTubeEmbed") %>% html_attr("id")},
-    source = "youtube"
-  )
-
-    twitter_embeddings <- tibble(
-    doc_hash = doc_hash,
-    embedding_url = doc %>% html_elements(xpath = "//div[@class='TwitterEmbed']/*/a") %>% html_attr("href"),
-    source = "twitter"
-    # embeddings_twitter_date = doc %>% html_elements(xpath = "//div[@class='TwitterEmbed']/*/a") %>% html_text2() %>% lubridate::parse_date_time(., "%B %d, %Y") %>% as.character()
-    # embeddings_twitter_text = doc %>% html_elements(xpath = "//div[@class='TwitterEmbed']") %>% html_text2()
-  )
+  not_include <- c()
   
-  odysee_embeddings <- tibble(
-    doc_hash = doc_hash,
-    embedding_url = doc %>% html_elements(".EmbedBlock-odysee iframe") %>% html_attr("data-src"),
-    source = "odysee"
-  )
+  if("try-error" %in% class(
+    youtube_embeddings <- try(tibble(
+      doc_hash = doc_hash,
+      embedding_url = if (length(doc %>% html_elements(".YouTubeEmbed") %>% html_attr("id")) > 0) {
+        paste0("https://www.youtube.com/embed/", doc %>% html_elements(".YouTubeEmbed") %>% html_attr("id"))   
+      } else{doc %>% html_elements(".YouTubeEmbed") %>% html_attr("id")},
+      source = "youtube"
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(youtube_embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "youtube_embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+    not_include <- append(not_include, "youtube_embeddings")
+  }
   
-  telegram_embeddings <- tibble(
-    doc_hash = doc_hash,
-    embedding_url = if (length(doc %>% html_elements(".TelegramEmbed script") %>% html_attr("data-telegram-post")) > 0) {
-      paste0("https://t.me/", doc %>% html_elements(".TelegramEmbed script") %>% html_attr("data-telegram-post"))   
-    } else{doc %>% html_elements(".TelegramEmbed script") %>% html_attr("data-telegram-post")},
-    source = "telegram"
-  )
   
-  vk_embeddings <- tibble(
-    doc_hash = doc_hash,
-    embedding_url = doc %>% html_elements("iframe") %>% html_attr("data-src"),
-    source = ifelse(doc %>% html_elements("iframe") %>% as.character() %>% str_detect("vk.com"),
-                    "vk",
-                    "other")
-  )
+  if("try-error" %in% class(
+    twitter_embeddings <- try(tibble(
+      doc_hash = doc_hash,
+      embedding_url = doc %>% html_elements(xpath = "//div[@class='TwitterEmbed']/*/a") %>% html_attr("href"),
+      source = "twitter"
+      # embeddings_twitter_date = doc %>% html_elements(xpath = "//div[@class='TwitterEmbed']/*/a") %>% html_text2() %>% lubridate::parse_date_time(., "%B %d, %Y") %>% as.character()
+      # embeddings_twitter_text = doc %>% html_elements(xpath = "//div[@class='TwitterEmbed']") %>% html_text2()
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(twitter_embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "twitter_embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+    not_include <- append(not_include, "twitter_embeddings")
+  }
+  
+  
+  
+  if("try-error" %in% class(
+    odysee_embeddings <- try(tibble(
+      doc_hash = doc_hash,
+      embedding_url = doc %>% html_elements(".EmbedBlock-odysee iframe") %>% html_attr("data-src"),
+      source = "odysee"
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(odysee_embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "odysee_embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+    not_include <- append(not_include, "odysee_embeddings")
+  }
+  
+  
+  if("try-error" %in% class(
+    telegram_embeddings <- try(tibble(
+      doc_hash = doc_hash,
+      embedding_url = if (length(doc %>% html_elements(".TelegramEmbed script") %>% html_attr("data-telegram-post")) > 0) {
+        paste0("https://t.me/", doc %>% html_elements(".TelegramEmbed script") %>% html_attr("data-telegram-post"))   
+      } else{doc %>% html_elements(".TelegramEmbed script") %>% html_attr("data-telegram-post")},
+      source = "telegram"
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(telegram_embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "telegram_embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+    not_include <- append(not_include, "telegram_embeddings")
+  } 
+  
   
   # other (Podcast etc.):
-  podbean_embeddings <- tibble(
-    doc_hash = doc_hash,
-    embedding_url = doc %>% html_elements(".AllEmbed iframe") %>% html_attr("src"),
-    source = ifelse(doc %>% html_elements(".AllEmbed iframe") %>% as.character() %>% str_detect("podbean"),
-                    "podbean",
-                    "other")
-  )
+  if("try-error" %in% class(
+    vk_embeddings <- try(tibble(
+      doc_hash = doc_hash,
+      embedding_url = doc %>% html_elements("iframe") %>% html_attr("data-src"),
+      source = ifelse(doc %>% html_elements("iframe") %>% as.character() %>% str_detect("vk.com"),
+                      "vk",
+                      "other")
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(telegram_embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "telegram_embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+    not_include <- append(not_include, "telegram_embeddings")
+  } 
   
-  embeddings <- rbind(youtube_embeddings, twitter_embeddings, odysee_embeddings, telegram_embeddings, vk_embeddings, podbean_embeddings) # %>% unique()
+  
+  # other (Podcast etc.):
+  if("try-error" %in% class(
+    vk_embeddings <- try(tibble(
+      doc_hash = doc_hash,
+      embedding_url = doc %>% html_elements(".AllEmbed iframe") %>% html_attr("src"),
+      source = ifelse(doc %>% html_elements(".AllEmbed iframe") %>% as.character() %>% str_detect("podbean"),
+                      "podbean",
+                      "other")
+    )
+    ))) {
+    cat(Sys.time(), "failed to save", link, "(podbean_embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "podbean_embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+    not_include <- append(not_include, "podbean_embeddings")
+  }     
+  
+  
+  # check which embeddings are no error:
+  all_embeddings <- c("youtube_embeddings", "twitter_embeddings", "odysee_embeddings", "telegram_embeddings", "vk_embeddings", "podbean_embeddings")  
+  valid_embeddings <- all_embeddings[!all_embeddings %in% not_include]
+  paste0("dplyr::bind_rows(", 
+         str_flatten(valid_embeddings, collapse = ", "),
+         ")")
+  
+  if("try-error" %in% class(
+    embeddings <- try(eval(parse(text = valid_embeddings))) # %>% unique()
+  )) {
+    cat(Sys.time(), "failed to save", link, "(embeddings)", "\n", sep = " ")
+    write(x = paste(Sys.time(), link, "embeddings",  sep = ", "), 
+          file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  } else{
+    # push to DB
+    DBI::dbWriteTable(conn = con, name = "embeddings", 
+                      value = embeddings %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                      append = TRUE
+    ) 
+  }
+  } # end of error-handling
+} # end of scraper_bk
 
-  # push to DB
-  DBI::dbWriteTable(conn = con, name = "embeddings", 
-                    value = embeddings %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  )
-}
 
 # RT espanol:
 scraper_es <- function(link, version, con = RT_DB){
