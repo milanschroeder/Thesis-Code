@@ -297,11 +297,13 @@ scraper_bk <- function(link, version, con = RT_DB){
 if("try-error" %in% class(
   doc <- try(rvest::read_html(link)    
 ))) {
+  
   catch_not_captured(link, version, con)
   cat(Sys.time(), "failed to save", link, "(main)", "\n", sep = " ")
   # write in logfile:
   write(x = paste(Sys.time(), link, "main",  sep = ", "), 
         file = "ignore/scrape_log.txt", append = T, sep = "\n")
+  
 } else{
   
   capture_time <- Sys.time()
@@ -637,7 +639,7 @@ scraper_de <- function(link, version, con = RT_DB){
  
   # try and record as missing if not available
 if("try-error" %in% class(
-    doc <- try(rvest::read_html(link)    
+    doc <- try(rvest::read_html(link)
 ))) {
   
   catch_not_captured(link, version, con)
@@ -779,8 +781,8 @@ if("try-error" %in% class(
   if("try-error" %in% class(
     recommendations_main <- try(tibble(
       doc_hash = doc_hash,
-      main_recommendations_url = doc %>% html_elements("strong+ a") %>% html_attr("href"),
       main_recommendations_title = doc %>% html_elements("strong+ a") %>% html_text2(),
+      main_recommendations_link = doc %>% html_elements("strong+ a") %>% html_attr("href"),
       main_recommendations_img = NA,
       main_recommendations_alt = NA
     )
@@ -807,12 +809,6 @@ if("try-error" %in% class(
                                             stringr::str_c(base_url, doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")),
                                             NA)
     )
-    
-  # push to DB
-  DBI::dbWriteTable(conn = con, name = "recommendations_embedded", 
-                    value = recommendations_embedded %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
     ))) {
     cat(Sys.time(), "failed to save", link, "(recommendations_embedded)", "\n", sep = " ")
     write(x = paste(Sys.time(), link, "recommendations_embedded",  sep = ", "), 
@@ -965,10 +961,10 @@ if("try-error" %in% class(
     DBI::dbWriteTable(conn = con, name = "embeddings", 
                       value = embeddings %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                       append = TRUE
-    ) 
-  }
+      ) 
+    }
   } # end of error-handling
-} # end of scraper_bk
+} # end of scraper_de
 
 
 # RT espanol:
