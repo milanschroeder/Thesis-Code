@@ -803,9 +803,9 @@ if("try-error" %in% class(
   if("try-error" %in% class(
     recommendations_embedded <- try(tibble(
       doc_hash = doc_hash,
-      recommendation_embedded_thumbnail = doc %>% html_elements(".ReadMore-root .Picture-root img") %>% html_attr("data-src"),
+      recommendation_embedded_thumbnail = doc %>% html_elements(".Card-imageWrap noscript img") %>%  html_attr("src"),
       recommendation_embedded_title = doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_text2(),
-      recommendation_embedded_url = ifelse(stringr::str_length(doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")) > 0,
+      recommendation_embedded_link = ifelse(stringr::str_length(doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")) > 0,
                                             stringr::str_c(base_url, doc %>% html_elements(".Card-title .Link-isFullCard") %>% html_attr("href")),
                                             NA)
     )
@@ -928,7 +928,7 @@ if("try-error" %in% class(
   
   # other (Podcast etc.):
   if("try-error" %in% class(
-    vk_embeddings <- try(tibble(
+    podbean_embeddings <- try(tibble(
       doc_hash = doc_hash,
       embedding_url = doc %>% html_elements(".AllEmbed iframe") %>% html_attr("src"),
       source = ifelse(doc %>% html_elements(".AllEmbed iframe") %>% as.character() %>% str_detect("podbean"),
