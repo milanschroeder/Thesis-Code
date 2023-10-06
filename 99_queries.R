@@ -14,17 +14,17 @@
 
 # save selected html from DB #####
 
-get_html <- function(linklist, dest = "ignore/html_docs"){
+get_html <- function(linklist, dest = "ignore/html_docs", con = conn){
   # linklist might be a vector of multiple links that occur in RT_DB
   
-  # connect to DB: #####
-  library(pacman)
-  pacman::p_load(tidyverse, DBI, RSQLite)
-  RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") 
+  library(tidyverse)
   
   # get entries for links
-  links <- dplyr::tbl(RT_DB, "html_pages") %>% dplyr::filter(link %in% linklist)
+  links <- dplyr::tbl(con, "html_pages") %>% dplyr::filter(link %in% linklist) %>% collect
+# checks through mega table, hence very slow...
   
+  
+  # create destination folder if not exists:
   if (!dir.exists(dest)) {
     dir.create(dest)
   }
@@ -36,3 +36,5 @@ get_html <- function(linklist, dest = "ignore/html_docs"){
   }
 
 }
+
+get_html(linklist)
