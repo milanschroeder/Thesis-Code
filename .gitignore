@@ -27,3 +27,10 @@ sitemaps/
 test/
 test*
 ignore/
+.gitignore
+00_connect_DB_RT.R
+99_queries.R
+99_main.R
+99_documentation_RT_DB.Rmd
+99_documentation_RT_DB.docx
+99_from_saved.R
