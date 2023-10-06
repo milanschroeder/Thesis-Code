@@ -52,7 +52,7 @@ scrape_base_sitemaps <- function(){
   sitemap_base <- tibble::tibble()
   for (i in 1:nrow(sitemap_versions)) {
     page <- rvest::read_html(sitemap_versions$link[i])
-    sitemap_base_tmp <- tibble(loc = page %>% rvest::html_elements("loc") %>% rvest::html_text2(),
+    sitemap_base_tmp <- tibble(source_loc = page %>% rvest::html_elements("loc") %>% rvest::html_text2(),
                                lastmod = page %>% rvest::html_elements("lastmod") %>% lubridate::ymd(),
                                last_scrape = Sys.time(),
                                version = sitemap_versions$version[i]
@@ -68,12 +68,15 @@ scrape_base_sitemaps <- function(){
   # safe full list to RT_DB:
   base_sitemaps <- updated_sitemaps %>% 
     rbind(., dplyr::tbl(RT_DB, "base_sitemaps") %>% dplyr::collect()) %>%
-    dplyr::distinct(loc, .keep_all = T)
+    dplyr::distinct(source_loc, .keep_all = T)
+  
+# ToDo: 
+  # append instead of overwrite!
   
   DBI::dbWriteTable(conn = RT_DB, name = "base_sitemaps", 
                     value = base_sitemaps %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     field.types = c(
-                      loc = "TEXT",
+                      source_loc = "TEXT",
                       lastmod = "DATE",
                       last_scrape = "TIMESTAMP",
                       version = "TEXT"
@@ -102,11 +105,11 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
   for (i in 1:nrow(sitemaps_source)) {
       
     scrapetime_tmp <- Sys.time() # saved here to make sure not to miss any articles posted between scraping and saving
-    page <- try(rvest::read_html(sitemaps_source$loc[i]), silent = T)
+    page <- try(rvest::read_html(sitemaps_source$source_loc[i]), silent = T)
      
      # write into log if error:
       if ("try-error" %in% class(page)) {
-        write(x = paste(Sys.time(), sitemaps_source$loc[i], "scrape_sitemaps",  sep = ", "), 
+        write(x = paste(Sys.time(), sitemaps_source$source_loc[i], "scrape_sitemaps",  sep = ", "), 
               file = "ignore/scrape_log.txt", append = T, sep = "\n")
       }else{
       
@@ -116,7 +119,7 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
                               lastmod_tz = page %>% rvest::html_elements("lastmod") %>% rvest::html_text2() %>% stringr::str_sub(start = -6),
                               last_scrape = scrapetime_tmp,
                               version = sitemaps_source$version[i],
-                              source_loc = sitemaps_source$loc[i]
+                              source_loc = sitemaps_source$source_loc[i]
                               )  
         sitemaps_new <- dplyr::bind_rows(sitemaps_new, sitemap_tmp)
       # get latinized version of RT Balkan as well:
@@ -125,7 +128,7 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
                                              mutate(loc = loc %>% str_replace("://", "://lat."),
                                                     version = "bk-lat"))
         }
-        cat(Sys.time(), sitemaps_source$loc[i], "succesfully captured")
+        cat(Sys.time(), sitemaps_source$source_loc[i], "succesfully captured")
       }
     Sys.sleep(sleeptime)
     } # end of loop
