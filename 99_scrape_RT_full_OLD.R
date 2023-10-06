@@ -296,7 +296,11 @@ write.csv(sitemaps, "sitemaps/crawled_urls.csv")
 
 # write sitemaps to SQL Database:
 pacman::p_load(DBI, RSQLite, dplyr)
-RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") # connect with SQLite (if not existent, builds new DB)
+
+# connect DB
+source("00_connect_DB_RT.R")
+RT_DB <- conn
+
 DBI::dbWriteTable(conn = RT_DB, name = "base_sitemaps", value = sitemap_base_archived,
                   field.types = c(
                     loc = "TEXT",
