@@ -22,6 +22,12 @@ for (i in 1:nrow(tosave)) {
   archive_links <- tibble(
     doc_hash = tosave$doc_hash[i],
     archive_url = system(paste("savepagenow", tosave$link[i]), intern = T) %>% ifelse(stringr::str_starts(., "https"), ., NA)
+    
+#    #"savepagenow"
+    # "https://web.archive.org/save/"
+    # , tosave$link[i]), intern = T) %>% ifelse(stringr::str_starts(., "https"), ., NA)
+
+    
   )
   # push to DB 
   # DBI::dbWriteTable(conn = con, name = "archive_links", 
