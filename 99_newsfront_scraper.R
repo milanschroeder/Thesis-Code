@@ -142,7 +142,7 @@ if (!tag %in% existing_tags$tag_label) {
   # Quotes:
 quotes <- tibble(
   doc_hash,
-  test_quotes <- html %>% html_elements(".article blockquote") %>% html_text2() # includes Begleitsatz (no idea how you call this in english :D)
+  quote <- html %>% html_elements(".article blockquote") %>% html_text2() # includes Begleitsatz (no idea how you call this in english :D)
 )
 # push to DB 
 if (nrow(quotes) > 0) {
@@ -186,21 +186,3 @@ for (row in 1:nrow(new_links)) {
   srape_nf_article(link = new_links$loc,
                    nf_version = new_links$version)
 }
-
-
-# for-Schleife, um alle Artikel zu scrapen
-
-for (link in all_links_newsfront$news_front_df_all) {
- 
-# probably faster to do tgis as one filter at start?
-   if (!(link %in% done_links_df$link)) {
-    article <- scrape_nf(link)  # scrape the article
-  } else {
-    next  # skip this link if it has already been scraped
-  }
-
-}
-
-
-#Datensatz herunterladen
-# write.csv(done_links_df, "en_newsfront_1year.csv", row.names=TRUE)
