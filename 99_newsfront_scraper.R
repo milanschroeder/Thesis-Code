@@ -5,27 +5,31 @@ library(magrittr)
 library(rvest)
 
 
-# Datenbank
-# connect
+# connect DB ####
 
-# server version:
 source("00_connect_DB_newsfront.R")
-mydb <- conn
-
-#Link-Datensatz für 1 Jahr (24.02.2022 - 23.02.2023). Links wurden von Sitemaps davor gescraped. 
-
-# all_links_newsfront = read.csv("news_front_df_all.csv") # adapt to get links from db
 
 # Daten abrufen 
-SQL_code = "SELECT * from page_data;"    # adapt to get already scraped links from db
-done_links_df = dbGetQuery(mydb, SQL_code)
 
-new_links <- 
-(all_links <- tbl(mydb, "url_list") %>% collect()
-  ) %>% filter(as.POSIXct(lastmod) > as.POSIXct("2022-01-01 00:00"))
-### later: 
-# new_links = all_links %>% filter(!loc %in% done_links)
+all_links <- tbl(conn, "url_list") %>% collect() %>% 
+  slice_sample(., prop = 1) # shuffle to distribute penetration
 
+start_from = as.POSIXct("2022-01-01 00:00") # for now, bc time of interest
+
+# already scraped:
+if ("page_data" %in% DBI::dbListTables(conn)) {
+  done_links <- tbl(conn, "page_data") %>% select(loc) %>% collect() %>% as_vector()
+
+  new_links <- all_links %>% 
+    filter(as.POSIXct(lastmod) >= start_from) %>% 
+    filter(str_detect(base_sitemap, "post-sitemap")) %>% 
+    filter(!loc %in% done_links)
+  
+} else{
+  new_links <- all_links %>% 
+    filter(as.POSIXct(lastmod) > start_from) %>% 
+    filter(str_detect(base_sitemap, "post-sitemap"))
+}
 
 
 # base_urls:
@@ -35,15 +39,21 @@ base_urls <- tibble(loc = paste0("https://",
                         version = c("ru", "en", "bgr", "de", "es", "srb", "fr", "hu", "ge", "sk")
 )
 
-link <- "https://de.news-front.su/2023/11/06/in-der-ukraine-sind-die-nazis-eine-organisierte-politische-kraft-die-britische-schauspielerin-roseanne-barr/"
+# get existing links in beginning:
+if ("tag_list" %in% DBI::dbListTables(conn)) {
+  existing_tags <- tbl(conn, "tag_list") %>% collect()
+} else{
+  existing_tags <- tibble()
+}
 
 # new function #####
 
 scrape_nf_article <- function(link, nf_version) {
-  print(paste(Sys.time(), link))
 
+  print(paste(Sys.time(), link))
+  
 html <- link %>% read_html()
-doc_hash <- rlang::hash(html)
+doc_hash <- rlang::hash(html %>% toString())
 
 base_url <- case_when(
   nf_version == base_urls$version[1] ~ base_urls$loc[1],
@@ -58,29 +68,65 @@ base_url <- case_when(
   nf_version == base_urls$version[10] ~ base_urls$loc[10]
 )
 
+
+
 # page_data:
 page_data <- tibble(
 
-  link = link,
+  loc = link,
   
   time_published = html %>% html_elements(xpath = "//meta[@property='article:published_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC"),
   time_modified = html %>% html_elements(xpath = "//meta[@property='article:modified_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC"),
   
   header = html %>% html_elements(".entry-title") %>% html_text2(),
-  lead = html %>% html_elements(".article h2") %>% html_text2() %>% str_c(., collapse = " ") %>% str_squish(),
-  text = html %>% html_elements(".article__content p") %>% html_text2() %>% str_c(., collapse = " ") %>% str_squish(),
   
-  nf_version,
+  lead = 
+    # complex bc ge and hu version lead is very weird sometimes -> in that case capture unformatted first paragraph (usually intended as lead) 
+   c(
+    html %>% 
+      html_elements(xpath = "//div[@class='article__content']//p/strong[not(parent::a)]") %>% html_text2()
+    ,
+    html %>% 
+      html_elements(xpath = "//div[@class='article__content']//h2[not(parent::a)]") %>% html_text2()
+    ,
+    html %>% 
+      html_elements(xpath = "//div[@class='article__content']//h3[not(parent::a)]") %>% html_text2()
+  ) %>% 
+    str_c(., collapse = " ") %>% 
+    ifelse(. == "", 
+           html %>% html_elements(".article__content p:nth-child(1)") %>% html_text2(),
+           .) %>% 
+    str_c(., collapse = " ") %>% 
+    str_remove_all(., "[\t\n]") %>% str_c(., collapse = " ") %>% str_squish(),
+  
+  text = html %>% html_elements(".article__content p") %>% html_text2() %>% str_c(., collapse = " ") %>% 
+    str_remove_all("Aufgrund von Zensur und Sperrung aller Medien und alternativer Meinungen abonnieren Sie bitte unseren Telegram-Kanal") %>%  str_squish(),
+  
+  version_nf = nf_version,
   doc_hash = doc_hash,
-  
-  capture_time = Sys.time()
-
+  available_online = 1,
+  capture_time = Sys.time() %>% lubridate::ymd_hms(., tz = "UTC")
 )
 # push to DB 
 DBI::dbWriteTable(conn, name = "page_data", 
                   value = page_data %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                   append = TRUE
 )   
+
+
+
+# html_pages:
+html_page <- tibble(
+  doc_hash,
+  html_doc = toString(html)
+)
+# push to DB 
+DBI::dbWriteTable(conn, name = "html_pages", 
+                  value = html_page %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                  append = TRUE
+)   
+
+
 
 
   # videolinks (iframe)
@@ -112,28 +158,35 @@ DBI::dbWriteTable(conn, name = "images",
 
 
   # tags
+
 tag_label <- html %>% html_elements(".tag") %>% html_text2()
 tag_url <- html %>% html_elements(".tag") %>% html_attr("href")
 
-tags <- tibble(
+article_tags <- tibble(
   doc_hash,
-  tag_label
+  tag_label,
+  version_nf = nf_version
 )
 
   # tag_url: only write if new tag:
-# get existing links in beginning:
-existing_tags <- tbl(mydb, "tag_list") %>% collect()
-
-if (!tag %in% existing_tags$tag_label) {
+  
+if (any(!tag_url %in% existing_tags$tag_url)) {
   new_tags <- tibble(tag_label = tag_label,
-                    tag_url = tag_url
-  ) %>% filter(!tag_label %in% existing_tags$tag_label)
+                    tag_url = tag_url,
+                    version_nf = nf_version
+  ) %>% filter(!tag_url %in% existing_tags$tag_url)
   
   existing_tags %<>% bind_rows(., new_tags)
   
-  # push to DB 
+  # push tag_list to DB 
   DBI::dbWriteTable(conn, name = "tag_list", 
                     value = new_tags %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+                    append = TRUE
+  )   
+  
+  # push article_tags to DB 
+  DBI::dbWriteTable(conn, name = "article_tags", 
+                    value = article_tags %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
   )   
 }
@@ -142,7 +195,10 @@ if (!tag %in% existing_tags$tag_label) {
   # Quotes:
 quotes <- tibble(
   doc_hash,
-  quote <- html %>% html_elements(".article blockquote") %>% html_text2() # includes Begleitsatz (no idea how you call this in english :D)
+  quote = html %>% html_elements(".article blockquote") %>% html_text2() %>% 
+    str_remove_all("Aufgrund von Zensur und Sperrung aller Medien und alternativer Meinungen abonnieren Sie bitte unseren Telegram-Kanal") %>% stringi::stri_remove_empty() %>% 
+    str_squish()
+    # includes Begleitsatz (no idea how you call this in english :D)
 )
 # push to DB 
 if (nrow(quotes) > 0) {
@@ -156,7 +212,7 @@ links <- tibble(
   doc_hash,
   link_text = html %>% html_elements(".article__content a") %>% html_text2(),
   link_url = html %>% html_elements(".article__content a") %>% html_attr("href")
-  ) 
+  ) %>% filter(str_detect(link_url, "about:blank", negate = T))
 
 external_links <- links %>% filter(., str_detect(link_url, base_url, negate = T))
 internal_links <- links %>% filter(., str_detect(link_url, base_url))
@@ -182,7 +238,16 @@ if (nrow(internal_links) > 0) {
 
 # apply function ####
 
-for (row in 1:nrow(new_links)) {
-  srape_nf_article(link = new_links$loc,
-                   nf_version = new_links$version)
+for (page_i in 1:nrow(new_links)) {
+
+    if("try-error" %in% class(try(
+      scrape_nf_article(link = new_links$loc[page_i],
+                        nf_version = new_links$version_nf[page_i])
+                      ))
+    ){
+      print(paste("***error saving***", page_i, " / ", nrow(new_links), new_links$loc[page_i]))
+      write(x = paste(Sys.time(), new_links$loc[page_i], "main",  sep = ", "), 
+            file = "scrapelog_nf.txt", append = T, sep = "\n")
+    } else{print(paste(page_i, " / ", nrow(new_links), "done"))}
+  
 }
