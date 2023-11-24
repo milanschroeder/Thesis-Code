@@ -129,11 +129,15 @@ DBI::dbWriteTable(conn, name = "html_pages",
 
 
 
-  # videolinks (iframe)
+  # videolinks (iframe) 
+# also captures other embeddings
 videos <- tibble(
   doc_hash,
   video_url = html %>% html_elements(".article iframe") %>% html_attr("src")
-)
+) %>% 
+  filter(str_detect(video_url, "about:blank", negate = T))
+
+
 # push to DB 
 if (nrow(videos) > 0) {
   DBI::dbWriteTable(conn, name = "videos", 
@@ -149,7 +153,8 @@ images <- tibble(
   doc_hash,
   img_url = html %>% html_elements(".article__content img") %>% html_attr("src"),
   img_alt = html %>% html_elements(".article__content img") %>% html_attr("alt")
-) %>% filter(!str_starts(img_url, "data"))
+) %>% 
+  filter(!str_starts(img_url, "data"))
 # push to DB 
 DBI::dbWriteTable(conn, name = "images", 
                   value = images %>% dplyr::mutate(across(.cols = !is.character, as.character)),
