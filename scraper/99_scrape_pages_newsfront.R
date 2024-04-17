@@ -83,7 +83,10 @@ page_data <- tibble(
   loc = link,
   
   time_published = html %>% html_elements(xpath = "//meta[@property='article:published_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC"),
-  time_modified = html %>% html_elements(xpath = "//meta[@property='article:modified_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC"),
+  time_modified = ifelse(is_empty(html %>% html_elements(xpath = "//meta[@property='article:modified_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC")),
+                         html %>% html_elements(xpath = "//meta[@property='article:published_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC"),
+                         html %>% html_elements(xpath = "//meta[@property='article:modified_time']") %>% html_attr("content") %>% lubridate::ymd_hms(., tz = "UTC")
+                         ) %>% as.POSIXct(., tz = "UTC"),
   
   header = html %>% html_elements(".entry-title") %>% html_text2(),
   
