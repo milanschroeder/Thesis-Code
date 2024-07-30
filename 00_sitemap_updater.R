@@ -3,16 +3,16 @@
 # connect to DB: #####
 library(pacman)
 pacman::p_load(tidyverse, DBI, RSQLite)
-RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") 
 
-# function to get time of last scrape #####
+source("00_connect_DB_RT.R")
+
+# helper function to get time of last scrape #####
 get_lastscrape <- function(df, lastscrape_var = "last_scrape"){
   
   pacman::p_load(tidyverse, DBI, RSQLite)
-  RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") 
-  
-  if ("base_sitemaps" %in% DBI::dbListTables(RT_DB)) {
-    (dplyr::tbl(RT_DB, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% dplyr::collect() %>% 
+
+  if ("base_sitemaps" %in% DBI::dbListTables(conn)) {
+    (dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% dplyr::collect() %>% 
        dplyr::summarize(lastscrape = max(lubridate::ymd_hms(last_scrape), na.rm = T)))$lastscrape
   } else {lubridate::ymd_hms("0000-01-01 00:00:00 UTC")}
 }
@@ -21,7 +21,7 @@ get_lastscrape <- function(df, lastscrape_var = "last_scrape"){
 # define list of sources(sitemap_versions) ####
 
 # list of base sitemap URLs:
-if (!("sitemap_versions" %in% DBI::dbListTables(RT_DB))) {  # create if not exist
+if (!("sitemap_versions" %in% DBI::dbListTables(conn))) {  # create if not exist
 sitemap_versions <- dplyr::tribble(
   ~version, ~link,
   "bk", "https://rt.rs/sitemap.xml",      # add "lat." for non-kyrillic version
@@ -32,7 +32,7 @@ sitemap_versions <- dplyr::tribble(
   "ar", "https://arabic.rt.com/sitemap.xml",
   "es", "https://actualidad.rt.com/sitemap.xml"
 )
-DBI::dbWriteTable(conn = RT_DB, name = "sitemap_versions", value = sitemap_versions,
+DBI::dbWriteTable(conn = conn, name = "sitemap_versions", value = sitemap_versions,
                   field.types = c(version = "TEXT", link = "TEXT"))
 }
 
@@ -45,9 +45,9 @@ DBI::dbWriteTable(conn = RT_DB, name = "sitemap_versions", value = sitemap_versi
 scrape_base_sitemaps <- function(){
   
   pacman::p_load(tidyverse, rvest, DBI, RSQLite)
-  RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") 
   
-  sitemap_versions <- dplyr::tbl(RT_DB, "sitemap_versions") %>% dplyr::collect() 
+  
+  sitemap_versions <- dplyr::tbl(conn, "sitemap_versions") %>% dplyr::collect() 
   
   sitemap_base <- tibble::tibble()
   for (i in 1:nrow(sitemap_versions)) {
@@ -65,15 +65,15 @@ scrape_base_sitemaps <- function(){
   lastscrape_base <- get_lastscrape("base_sitemaps") # get time of last scrape
   updated_sitemaps <- dplyr::filter(sitemap_base, lastmod > lastscrape_base) 
   
-  # safe full list to RT_DB:
+  # safe full list to conn:
   base_sitemaps <- updated_sitemaps %>% 
-    rbind(., dplyr::tbl(RT_DB, "base_sitemaps") %>% dplyr::collect()) %>%
+    bind_rows(., dplyr::tbl(conn, "base_sitemaps") %>% dplyr::collect()) %>%
     dplyr::distinct(source_loc, .keep_all = T)
   
 # ToDo: 
   # append instead of overwrite!
   
-  DBI::dbWriteTable(conn = RT_DB, name = "base_sitemaps", 
+  DBI::dbWriteTable(conn = conn, name = "base_sitemaps", 
                     value = base_sitemaps %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     field.types = c(
                       source_loc = "TEXT",
@@ -91,14 +91,14 @@ scrape_base_sitemaps <- function(){
 scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
   
   pacman::p_load(tidyverse, rvest, DBI, RSQLite)
-  RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") 
+
   
   # options: 1) scrape not only updated_sitemaps (default), 2) base_sitemaps from RT_DB ("all"), 3) individually specified df_linklist (with var $loc, $version)
   scrape_all <- F    
-  if (sitemaps_source == "all") {
-      sitemaps_source <- dplyr::tbl(RT_DB, "base_sitemaps") %>% dplyr::collect()
-      scrape_all <- T
-    }
+  # if (sitemaps_source == "all") {
+  #     sitemaps_source <- dplyr::tbl(conn, "base_sitemaps") %>% dplyr::collect()
+  #     scrape_all <- T
+  #   }
   
   # scrape with loop
   sitemaps_new <- tibble::tibble()
@@ -142,13 +142,13 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
     updated_pages <- sitemaps_new 
   }
   
-  # no comparison to existing links in RT_DB to keep track of page updates!
+  # no comparison to existing links in conn to keep track of page updates!
 
-  DBI::dbWriteTable(conn = RT_DB, name = "page_list", 
+  DBI::dbWriteTable(conn = conn, name = "page_list", 
                     value = updated_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
                     ) 
   
   return(updated_pages)
   
-  }
+}

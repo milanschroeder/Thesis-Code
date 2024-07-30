@@ -19,7 +19,7 @@ old_pages_nf <- DBI::dbReadTable(conn, "url_list") # read from DB
 
 update_sitemaps <- function(sitemap_index = sitemap_index, conn = NULL, old_pages = NULL){
   
-  library(tidyerse)
+  library(tidyverse)
   # install.packages("devtools")
   library(devtools)
   # install_github("pixgarden/xsitemap")
@@ -202,14 +202,3 @@ update_sitemaps(sitemap_index_nf, conn_nf, old_pages_nf)
 
 
 
-
-
-# get pages to scrape: ####
-
-to_scrape <- 
-  DBI::dbReadTable(conn, "url_list") %>%  
-  left_join(., tbl(conn, "page_data") %>% select(loc, available_online) %>% collect(), by=join_by(loc)) %>% 
-  filter(stringr::str_detect(origin, "author|category|tag|page", negate = T), is.na(available_online)) %>% select(-available_online) %>% # generally, only scrape articles
-  filter(lastmod > ymd("2021-12-31")) %>% 
-  sample_frac(1) %>% 
-  distinct(loc, .keep_all = T)
