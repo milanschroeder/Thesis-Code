@@ -13,7 +13,7 @@ source("00_connect_DB_newsfront.R")
 
 all_links <- tbl(conn, "url_list") %>% collect()
 
-start_from = as.POSIXct("2021-12-31 23:59") # for now, bc time of interest
+start_from = as.POSIXct("2000-12-31 23:59")
 # already scraped:
 if ("page_data" %in% DBI::dbListTables(conn)) {
   done_links <- tbl(conn, "page_data") %>% select(loc, available_online) %>% collect()
@@ -130,7 +130,7 @@ DBI::dbWriteTable(conn, name = "page_data",
 #   doc_hash,
 #   html_doc = toString(html)
 # )
-# # push to DB 
+# push to DB 
 # DBI::dbWriteTable(conn, name = "html_pages", 
 #                   value = html_page %>% dplyr::mutate(across(.cols = !is.character, as.character)),
 #                   append = TRUE
