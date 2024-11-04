@@ -125,16 +125,16 @@ DBI::dbWriteTable(conn, name = "page_data",
 
 
 
-# html_pages:
-html_page <- tibble(
-  doc_hash,
-  html_doc = toString(html)
-)
-# push to DB 
-DBI::dbWriteTable(conn, name = "html_pages", 
-                  value = html_page %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                  append = TRUE
-)   
+### html_pages: #### (deprecated)
+# html_page <- tibble(
+#   doc_hash,
+#   html_doc = toString(html)
+# )
+# # push to DB 
+# DBI::dbWriteTable(conn, name = "html_pages", 
+#                   value = html_page %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+#                   append = TRUE
+# )   
 
 
 

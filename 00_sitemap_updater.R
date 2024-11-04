@@ -12,8 +12,9 @@ get_lastscrape <- function(df, lastscrape_var = "last_scrape"){
   pacman::p_load(tidyverse, DBI, RSQLite)
 
   if ("base_sitemaps" %in% DBI::dbListTables(conn)) {
-    (dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% dplyr::collect() %>% 
-       dplyr::summarize(lastscrape = max(lubridate::ymd_hms(last_scrape), na.rm = T)))$lastscrape
+    dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% arrange(-lastscrape_var) %>% head(1) %>% pull()
+    # (dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% dplyr::collect() %>% 
+    #    dplyr::summarize(lastscrape = max(lubridate::ymd_hms(last_scrape), na.rm = T)))$lastscrape
   } else {lubridate::ymd_hms("0000-01-01 00:00:00 UTC")}
 }
 
@@ -100,8 +101,10 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
   #     scrape_all <- T
   #   }
   
+  lastscrape_sitemaps <- get_lastscrape("page_list") # get time of last scrape
+      
   # scrape with loop
-  sitemaps_new <- tibble::tibble()
+  updated_pages <- tibble()
   for (i in 1:nrow(sitemaps_source)) {
       
     scrapetime_tmp <- Sys.time() # saved here to make sure not to miss any articles posted between scraping and saving
@@ -109,8 +112,9 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
      
      # write into log if error:
       if ("try-error" %in% class(page)) {
-        write(x = paste(Sys.time(), sitemaps_source$source_loc[i], "scrape_sitemaps",  sep = ", "), 
-              file = "ignore/scrape_log.txt", append = T, sep = "\n")
+        # write(x = paste(Sys.time(), sitemaps_source$source_loc[i], "scrape_sitemaps",  sep = ", "), 
+        #       file = "ignore/scrape_log.txt", append = T, sep = "\n")
+        print(paste("ERROR saving", sitemaps_source$source_loc[i], ":("))
       }else{
       
         # get data:
@@ -120,34 +124,36 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
                               last_scrape = scrapetime_tmp,
                               version = sitemaps_source$version[i],
                               source_loc = sitemaps_source$source_loc[i]
-                              )  
-        sitemaps_new <- dplyr::bind_rows(sitemaps_new, sitemap_tmp)
+                              ) %>% 
+          dplyr::filter(., lastmod_utc > lastscrape_sitemaps) 
+        
+        sitemaps_new <- sitemap_tmp
+
       # get latinized version of RT Balkan as well:
         if (sitemaps_source$version[i] == "bk") {
           sitemaps_new <- dplyr::bind_rows(sitemaps_new, sitemap_tmp %>% 
                                              mutate(loc = loc %>% str_replace("://", "://lat."),
                                                     version = "bk-lat"))
         }
-        cat(Sys.time(), sitemaps_source$source_loc[i], "succesfully captured")
-      }
-    Sys.sleep(sleeptime)
-    } # end of loop
-  
-  if (scrape_all == F) {
-  # check which pages were updated:
-    lastscrape_sitemaps <- get_lastscrape("page_list") # get time of last scrape
-    updated_pages <- dplyr::filter(sitemaps_new, lastmod_utc > lastscrape_sitemaps) 
-  } else{
-  # just save all
-    updated_pages <- sitemaps_new 
-  }
-  
-  # no comparison to existing links in conn to keep track of page updates!
+       
+    
 
-  DBI::dbWriteTable(conn = conn, name = "page_list", 
-                    value = updated_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+# save to DB:   
+    DBI::dbWriteTable(conn = conn, name = "page_list", 
+                    value = sitemaps_new %>% dplyr::mutate(across(.cols = !is.character, as.character)),
                     append = TRUE
                     ) 
+    
+    updated_pages <- dplyr::bind_rows(updated_pages, sitemaps_new)
+    
+    cat(toString(Sys.time()), sitemaps_source$source_loc[i], "succesfully captured\n")
+    
+    Sys.sleep(sleeptime)
+    
+      } 
+    } # end of loop
+  
+  # no comparison to existing links in conn to keep track of page updates!
   
   return(updated_pages)
   

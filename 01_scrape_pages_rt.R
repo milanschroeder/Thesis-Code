@@ -4,21 +4,23 @@
 initialize_page_tbls <- function(con = RT_DB){
 
 # create empty dfs to push: 
-  # save full html:
-  html_pages <- tibble(
-    link = character(0),
-    doc_hash = character(0),
-    html_doc = character(0)
-  )
-  # push to DB 
-  dplyr::copy_to(dest = con,
-                  df = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                  name = "html_pages", 
-                  temporary = F, 
-                  types = c(link = "TEXT", doc_hash = "TEXT", html_doc = "TEXT"),
-                  indexes = list("link", "doc_hash"), 
-                  overwrite = F
-  )
+
+  # discontinued: #
+      # save full html:
+      # html_pages <- tibble(
+      #   link = character(0),
+      #   doc_hash = character(0),
+      #   html_doc = character(0)
+      # )
+      # # push to DB 
+      # dplyr::copy_to(dest = con,
+      #                 df = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+      #                 name = "html_pages", 
+      #                 temporary = F, 
+      #                 types = c(link = "TEXT", doc_hash = "TEXT", html_doc = "TEXT"),
+      #                 indexes = list("link", "doc_hash"), 
+      #                 overwrite = F
+      # )
   
   # main df:
   page_data <- tibble(
@@ -209,6 +211,35 @@ initialize_page_tbls <- function(con = RT_DB){
  DBI::dbDisconnect(con)
 }
 
+# ToDo: save to archive.org: ####
+# save_wayback <- function(doc_hash, link){
+#   
+#   archive_links <- tibble(
+#     doc_hash = doc_hash,
+#     archive_url <- system(paste("savepagenow", link), intern = T)
+#   )
+#   # push to DB
+#   DBI::dbWriteTable(conn = con, name = "archive_links",
+#                     value = archive_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+#                     append = TRUE
+#   )
+# }
+
+
+# Discontinued: save HTMLs: ####
+# save_html <- function(link, doc_hash, html_doc){      
+#   html_pages <- tibble(
+#     link = link,
+#     doc_hash = doc_hash,
+#     html_doc = html_doc
+#   )
+#   # push to DB
+#   DBI::dbWriteTable(conn = con, name = "html_pages",
+#                     value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+#                     append = TRUE
+#   )
+# }
+
 # select scraper ####
 
 scrape_pages <- function(pages_list = updated_pages, sleeptime = .5, connection = conn, log_file = "ignore/scrape_log.txt"){
@@ -272,6 +303,7 @@ scrape_pages <- function(pages_list = updated_pages, sleeptime = .5, connection 
 # version specific scrapers (to be called inside function) #####
 
 
+
 # RT Balkan:
 scraper_bk <- function(link, version, con, logfile = log_file){
   
@@ -303,29 +335,11 @@ if("try-error" %in% class(
   
   # get page_data:
   
-# save to archive.org:
-  archive_links <- tibble(
-    doc_hash = doc_hash,
-    archive_url <- system(paste("savepagenow", link), intern = T)
-  )
-  # push to DB 
-  DBI::dbWriteTable(conn = con, name = "archive_links", 
-                    value = archive_links %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
+
+# Discontinued: save HTMLs: 
+  # save_html(link, doc_hash, html_doc) 
+# (or eventually: save_wayback())
   
-   
-# save full html:
-  html_pages <- tibble(
-    link = link,
-    doc_hash = doc_hash,
-    html_doc = html_doc
-  )
-  # push to DB 
-  DBI::dbWriteTable(conn = con, name = "html_pages", 
-                    value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
   
 # main df:
   page_data <- tibble(
@@ -662,20 +676,10 @@ if("try-error" %in% class(
     doc_hash <- rlang::hash(html_doc)
     
  
-# get page_data:
-  
-    # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
-  
+# Discontinued: save HTMLs: 
+    # save_html(link, doc_hash, html_doc) 
+    # (or eventually: save_wayback())
+    
     
   # main df:
   page_data <- tibble(
@@ -1006,19 +1010,9 @@ scraper_es <- function(link, version, con, logfile = log_file){
     doc_hash <- rlang::hash(html_doc)
     
     
-    # get page_data:
-    
-    # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+  # Discontinued: save HTMLs: 
+    # save_html(link, doc_hash, html_doc) 
+    # (or eventually: save_wayback())
     
     
     # main df:
@@ -1350,19 +1344,9 @@ scraper_en <- function(link, version, con,
       doc_hash <- rlang::hash(html_doc)
       
       
-      # get page_data:
-      
-      # save full html:
-      html_pages <- tibble(
-        link = link,
-        doc_hash = doc_hash,
-        html_doc = html_doc
-      )
-      # push to DB 
-      DBI::dbWriteTable(conn = con, name = "html_pages", 
-                        value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                        append = TRUE
-      ) 
+    # Discontinued: save HTMLs: 
+      # save_html(link, doc_hash, html_doc) 
+      # (or eventually: save_wayback())
       
       
       # main df:
@@ -1810,17 +1794,10 @@ scraper_fr <- function(link, version, con,
     
     # get page_data:
     
-    # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+  # Discontinued: save HTMLs: 
+    # save_html(link, doc_hash, html_doc) 
+    # (or eventually: save_wayback())
+    
     
     
     # main df:
@@ -2327,19 +2304,11 @@ scraper_ru <- function(link, version, con,
     doc_hash <- rlang::hash(html_doc)
     
     
-    # get page_data:
     
-    # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+  # Discontinued: save HTMLs: 
+    # save_html(link, doc_hash, html_doc) 
+    # (or eventually: save_wayback())
+    
     
     
     # main df:
@@ -2855,19 +2824,10 @@ scraper_ar <- function(link, version, con, logfile = log_file,
     doc_hash <- rlang::hash(html_doc)
     
     
-    # get page_data:
+  # Discontinued: save HTMLs: 
+    # save_html(link, doc_hash, html_doc) 
+    # (or eventually: save_wayback())
     
-    # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
     
     
     # main df:

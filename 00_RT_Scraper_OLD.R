@@ -1,5 +1,8 @@
 # SCRAPER FOR RT DE
 
+### DEPRECATED VERSION BASED ON SEARCH FUNCTION & R-SELENIUM ###
+
+
 # make sure to avoid blocking by (via DNS/IP)
 
 ## function to scrape RT DE search results: ####
