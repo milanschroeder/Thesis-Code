@@ -4,6 +4,22 @@ library(RMariaDB)
 library(magrittr)
 library(rvest)
 
+# helper: ####
+
+chromote_session <- ChromoteSession$new() # initial start of chromote session
+
+fetch_problematic_content <- function(url_, chromote_session, timeout = 60000){
+  
+  # if necessary, restart session:
+  if(!chromote_session$is_active()){chromote_session <- ChromoteSession$new()} 
+  
+  # return response as text:
+  chromote_session$Runtime$evaluate(
+    glue::glue('fetch("{url_}").then(response => response.text());'), 
+    awaitPromise = TRUE,
+    timeout = timeout
+  )$result$value
+}
 
 # connect DB ####
 
@@ -53,13 +69,24 @@ if ("tag_list" %in% DBI::dbListTables(conn)) {
   existing_tags <- tibble()
 }
 
-# new function #####
+# scraping function #####
 
-scrape_nf_article <- function(link, nf_version) {
+scrape_nf_article <- function(link, nf_version, C_session = chromote_session) {
 
   print(paste(Sys.time(), link))
   
-html <- link %>% read_html()
+# read page: 
+html <- try(
+  link %>% read_html(encoding = "utf-8")
+  )
+# catch weird encoding issues and other stuff:
+if ("try-error" %in% class(html)) {
+  html <- 
+    link %>% 
+    fetch_problematic_content(., C_session) %>% 
+    read_html() # better leave undefined
+}
+
 doc_hash <- rlang::hash(html %>% toString())
 
 base_url <- case_when(
