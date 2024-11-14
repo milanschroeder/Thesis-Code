@@ -3,6 +3,7 @@ library(tidyverse)
 library(RMariaDB)
 library(magrittr)
 library(rvest)
+library(chromote)
 
 # helper: ####
 
