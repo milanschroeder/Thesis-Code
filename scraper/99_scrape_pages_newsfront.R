@@ -82,10 +82,16 @@ html <- try(
   )
 # catch weird encoding issues and other stuff:
 if ("try-error" %in% class(html)) {
+
+  print("...switching to chromote...")
+
   html <- 
     link %>% 
     fetch_problematic_content(., C_session) %>% 
     read_html() # better leave undefined
+
+  print("...success!")
+
 }
 
 doc_hash <- rlang::hash(html %>% toString())
