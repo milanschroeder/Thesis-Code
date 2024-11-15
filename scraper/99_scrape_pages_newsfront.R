@@ -3,24 +3,26 @@ library(tidyverse)
 library(RMariaDB)
 library(magrittr)
 library(rvest)
-library(chromote)
+# library(chromote)
+library(httr2)
+library(stringi)
 
 # helper: ####
 
-chromote_session <- ChromoteSession$new() # initial start of chromote session
-
-fetch_problematic_content <- function(url_, chromote_session, timeout = 60000){
-  
-  # if necessary, restart session:
-  if(!chromote_session$is_active()){chromote_session <- ChromoteSession$new()} 
-  
-  # return response as text:
-  chromote_session$Runtime$evaluate(
-    glue::glue('fetch("{url_}").then(response => response.text());'), 
-    awaitPromise = TRUE,
-    timeout = timeout
-  )$result$value
-}
+# chromote_session <- ChromoteSession$new() # initial start of chromote session
+# 
+# fetch_problematic_content <- function(url_, chromote_session, timeout = 60000){
+#   
+#   # if necessary, restart session:
+#   if(!chromote_session$is_active()){chromote_session <- ChromoteSession$new()} 
+#   
+#   # return response as text:
+#   chromote_session$Runtime$evaluate(
+#     glue::glue('fetch("{url_}").then(response => response.text());'), 
+#     awaitPromise = TRUE,
+#     timeout = timeout
+#   )$result$value
+# }
 
 # connect DB ####
 
@@ -77,22 +79,31 @@ scrape_nf_article <- function(link, nf_version, C_session = chromote_session) {
   print(paste(Sys.time(), link))
   
 # read page: 
-html <- try(
-  link %>% read_html(encoding = "utf-8")
-  )
+html <- link %>% 
+  request() %>%  
+  req_perform() %>% 
+  resp_body_raw() %>%  
+  stri_conv(from = "UTF-8", to = "UTF-8") %>% 
+  read_html(encoding = "UTF-8")
+  
+#html <- #try(
+#  link %>% read_html(encoding = "utf-8")
+  #)
+
 # catch weird encoding issues and other stuff:
-if ("try-error" %in% class(html)) {
 
-  print("...switching to chromote...")
-
-  html <- 
-    link %>% 
-    fetch_problematic_content(., C_session) %>% 
-    read_html() # better leave undefined
-
-  print("...success!")
-
-}
+# if ("try-error" %in% class(html)) {
+# 
+#   print("...switching to chromote...")
+# 
+#   html <- 
+#     link %>% 
+#     fetch_problematic_content(., C_session) %>% 
+#     read_html() # better leave undefined
+# 
+#   print("...success!")
+# 
+# }
 
 doc_hash <- rlang::hash(html %>% toString())
 
