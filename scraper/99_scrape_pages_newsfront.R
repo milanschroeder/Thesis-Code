@@ -81,6 +81,7 @@ scrape_nf_article <- function(link, nf_version, C_session = chromote_session) {
 # read page: 
 html <- link %>% 
   request() %>%  
+  req_timeout(60) %>%
   req_perform() %>% 
   resp_body_raw() %>%  
   stri_conv(from = "UTF-8", to = "UTF-8") %>% 
