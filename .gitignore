@@ -36,3 +36,4 @@ ignore/
 99_from_saved.R
 00_connect_DB_newsfront.R
 scraper/scrapelog*
+scrapelog*
