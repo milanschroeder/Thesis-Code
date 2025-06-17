@@ -1,15 +1,17 @@
 # sitemap updater:
 
 # connect to DB: #####
-library(pacman)
-pacman::p_load(tidyverse, DBI, RSQLite)
+require(tidyverse)
+require(DBI)
 
 source("00_connect_DB_RT.R")
 
 # helper function to get time of last scrape #####
 get_lastscrape <- function(df, lastscrape_var = "last_scrape"){
   
-  pacman::p_load(tidyverse, DBI, RSQLite)
+  require(tidyverse)
+  require(DBI)
+  
 
   if ("base_sitemaps" %in% DBI::dbListTables(conn)) {
     dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% arrange(-lastscrape_var) %>% head(1) %>% pull()
@@ -45,7 +47,9 @@ DBI::dbWriteTable(conn = conn, name = "sitemap_versions", value = sitemap_versio
 # scrape base sitemaps for sub-sitemaps:
 scrape_base_sitemaps <- function(){
   
-  pacman::p_load(tidyverse, rvest, DBI, RSQLite)
+  require(tidyverse)
+  require(rvest)
+  require(DBI)
   
   
   sitemap_versions <- dplyr::tbl(conn, "sitemap_versions") %>% dplyr::collect() 
@@ -91,8 +95,10 @@ scrape_base_sitemaps <- function(){
 
 scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
   
-  pacman::p_load(tidyverse, rvest, DBI, RSQLite)
-
+  require(tidyverse)
+  require(rvest)
+  require(DBI)
+  
   
   # options: 1) scrape not only updated_sitemaps (default), 2) base_sitemaps from RT_DB ("all"), 3) individually specified df_linklist (with var $loc, $version)
   scrape_all <- F    

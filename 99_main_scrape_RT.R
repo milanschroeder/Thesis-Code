@@ -14,7 +14,7 @@ source("01_scrape_pages_rt.R")
 
 # scrape #####
 
-scrape_filter <- c("ar")  # select which scrapers to use (mainly for initial scrape)
+scrape_filter <- c("de")  # select which scrapers to use (mainly for initial scrape)
 
 already_scraped <-
   tbl(conn, "page_data") %>% 
