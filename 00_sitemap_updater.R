@@ -14,7 +14,7 @@ get_lastscrape <- function(df, lastscrape_var = "last_scrape"){
   
 
   if ("base_sitemaps" %in% DBI::dbListTables(conn)) {
-    dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% arrange(-lastscrape_var) %>% head(1) %>% pull()
+    dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% arrange(-lastscrape_var) %>% head(1) %>% dplyr::pull()
     # (dplyr::tbl(conn, df) %>% dplyr::select(last_scrape = lastscrape_var) %>% dplyr::collect() %>% 
     #    dplyr::summarize(lastscrape = max(lubridate::ymd_hms(last_scrape), na.rm = T)))$lastscrape
   } else {lubridate::ymd_hms("0000-01-01 00:00:00 UTC")}
