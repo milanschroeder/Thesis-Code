@@ -101,16 +101,16 @@ if("try-error" %in% class(
   # get page_data:
   
 # save full html:
-  html_pages <- tibble(
-    link = link,
-    doc_hash = doc_hash,
-    html_doc = html_doc
-  )
-  # push to DB 
-  DBI::dbWriteTable(conn = con, name = "html_pages", 
-                    value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                    append = TRUE
-  ) 
+  # html_pages <- tibble(
+  #   link = link,
+  #   doc_hash = doc_hash,
+  #   html_doc = html_doc
+  # )
+  # # push to DB 
+  # DBI::dbWriteTable(conn = con, name = "html_pages", 
+  #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+  #                   append = TRUE
+  # ) 
   
 # main df:
   page_data <- tibble(
@@ -453,16 +453,16 @@ if("try-error" %in% class(
 # get page_data:
   
     # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+    # html_pages <- tibble(
+    #   link = link,
+    #   doc_hash = doc_hash,
+    #   html_doc = html_doc
+    # )
+    # # push to DB 
+    # DBI::dbWriteTable(conn = con, name = "html_pages", 
+    #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+    #                   append = TRUE
+    # ) 
   
     
   # main df:
@@ -801,17 +801,17 @@ logfile = "scrapelog_rt.txt"
     # get page_data:
     
     # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
-    
+    # html_pages <- tibble(
+    #   link = link,
+    #   doc_hash = doc_hash,
+    #   html_doc = html_doc
+    # )
+    # # push to DB 
+    # DBI::dbWriteTable(conn = con, name = "html_pages", 
+    #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+    #                   append = TRUE
+    # ) 
+    # 
     
     # main df:
     page_data <- tibble(
@@ -1149,16 +1149,16 @@ logfile = "scrapelog_rt.txt"
       # get page_data:
       
       # save full html:
-      html_pages <- tibble(
-        link = link,
-        doc_hash = doc_hash,
-        html_doc = html_doc
-      )
-      # push to DB 
-      DBI::dbWriteTable(conn = con, name = "html_pages", 
-                        value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                        append = TRUE
-      ) 
+      # html_pages <- tibble(
+      #   link = link,
+      #   doc_hash = doc_hash,
+      #   html_doc = html_doc
+      # )
+      # # push to DB 
+      # DBI::dbWriteTable(conn = con, name = "html_pages", 
+      #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+      #                   append = TRUE
+      # ) 
       
       
       # main df:
@@ -1610,16 +1610,16 @@ logfile = "scrapelog_rt.txt"
     # get page_data:
     
     # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+    # html_pages <- tibble(
+    #   link = link,
+    #   doc_hash = doc_hash,
+    #   html_doc = html_doc
+    # )
+    # # push to DB 
+    # DBI::dbWriteTable(conn = con, name = "html_pages", 
+    #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+    #                   append = TRUE
+    # ) 
     
     
     # main df:
@@ -2128,17 +2128,17 @@ logfile = "scrapelog_rt.txt"
     # get page_data:
     
     # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
-    
+    # html_pages <- tibble(
+    #   link = link,
+    #   doc_hash = doc_hash,
+    #   html_doc = html_doc
+    # )
+    # # push to DB 
+    # DBI::dbWriteTable(conn = con, name = "html_pages", 
+    #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+    #                   append = TRUE
+    # ) 
+    # 
     
     # main df:
     page_data <- tibble(
@@ -2658,16 +2658,16 @@ logfile = "scrapelog_rt.txt"
     # get page_data:
     
     # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+    # html_pages <- tibble(
+    #   link = link,
+    #   doc_hash = doc_hash,
+    #   html_doc = html_doc
+    # )
+    # # push to DB 
+    # DBI::dbWriteTable(conn = con, name = "html_pages", 
+    #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+    #                   append = TRUE
+    # ) 
     
     
     # main df:
@@ -3189,16 +3189,16 @@ logfile = "scrapelog_rt.txt"
     # get page_data:
     
     # save full html:
-    html_pages <- tibble(
-      link = link,
-      doc_hash = doc_hash,
-      html_doc = html_doc
-    )
-    # push to DB 
-    DBI::dbWriteTable(conn = con, name = "html_pages", 
-                      value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
-                      append = TRUE
-    ) 
+    # html_pages <- tibble(
+    #   link = link,
+    #   doc_hash = doc_hash,
+    #   html_doc = html_doc
+    # )
+    # # push to DB 
+    # DBI::dbWriteTable(conn = con, name = "html_pages", 
+    #                   value = html_pages %>% dplyr::mutate(across(.cols = !is.character, as.character)),
+    #                   append = TRUE
+    # ) 
     
     
     # main df:
