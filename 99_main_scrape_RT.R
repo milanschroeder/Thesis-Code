@@ -1,20 +1,27 @@
 # 99_main_scrape_RT
 
 # load packages #####
-library(dplyr)
-library(lubridate)
-library(DBI)
-library(rvest)
+require(dplyr)
+require(lubridate)
+require(DBI)
+require(rvest)
 
 # connect DB #####
 source("00_connect_DB_RT.R")
+
+# update sitemaps:
+source("00_sitemap_updater.R")
+updated_pages <- scrape_base_sitemaps()
+page_list <- scrape_sitemaps()
+#just needed to check, loaded from DB later (less data heavy)
+#rm(page_list, updated_pages)
 
 # load scraping functions #####
 source("01_scrape_pages_rt.R")
 
 # scrape #####
 
-scrape_filter <- c("de")  # select which scrapers to use (mainly for initial scrape)
+scrape_filter <- c("de")  # select which scrapers to use (mainly for initial scrape or preferential update)
 
 already_scraped <-
   tbl(conn, "page_data") %>% 
