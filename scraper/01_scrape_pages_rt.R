@@ -2,13 +2,13 @@
 
 # select scraper ####
 
-scrape_pages <- function(pages_list = updated_pages, sleeptime = .5, connection = conn, log_file = "scrapelog.txt"){
+scrape_pages <- function(pages_list = updated_pages, sleeptime = .5, connection = conn, log_file = "scrapelog_rt.txt"){
 
   # connect DB:
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
 #  RT_DB <- DBI::dbConnect(drv = RSQLite::SQLite(), dbname = "ignore/Russian_Media_Database_RT.sqlite") 
   
   #  loop over pages:
@@ -69,14 +69,14 @@ scrape_pages <- function(pages_list = updated_pages, sleeptime = .5, connection 
 scraper_bk <- function(link, version, con, logfile = log_file){
 
 # hard code file to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
 
   
   # connect DB:
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
   
   # get page:
   base_url <- ifelse(version == "bk", "https://rt.rs", "https://lat.rt.rs")
@@ -422,12 +422,12 @@ if("try-error" %in% class(
 scraper_de <- function(link, version, con, logfile = log_file){
 
 # hard code to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
   
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
   
   # get page:
   base_url <- "https://de.rt.com"
@@ -768,13 +768,13 @@ if("try-error" %in% class(
 # RT espanol:
 scraper_es <- function(link, version, con, logfile = log_file){
   
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
 
 # hard code to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
 
   
   # get page:
@@ -1117,13 +1117,13 @@ scraper_en <- function(link, version, con,
   # ~ scraper_fr ~ scraper_ru
 
 # hard code to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
 
   
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)  
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)  
   
     # get page:
     base_url <- "https://www.rt.com"
@@ -1578,13 +1578,13 @@ scraper_fr <- function(link, version, con,
   # ~ scraper_en ~ scraper_ru
 
 # hard code to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
 
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
-  library(anytime)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
+  require(anytime)
   
   # get page:
   base_url <- "https://francais.rt.com"
@@ -2096,13 +2096,13 @@ scraper_ru <- function(link, version, con,
   # ~ scraper_en ~ scraper_fr
 
 # hard code to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
     
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
-  library(anytime)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
+  require(anytime)
   
   # get page:
   base_url <- "https://russian.rt.com"
@@ -2626,13 +2626,13 @@ scraper_ru <- function(link, version, con,
   # ~ scraper_en ~ scraper_fr
 
 # hard code to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
 
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
-  library(anytime)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
+  require(anytime)
   
   # get page:
   base_url <- "https://russian.rt.com"
@@ -3157,13 +3157,13 @@ scraper_ar <- function(link, version, con, logfile = log_file,
 ){
   
 # hard code file to avoid weird error:
-logfile = "scrapelog.txt"
+logfile = "scrapelog_rt.txt"
 
-  library(DBI)
-  library(rvest)
-  library(dplyr)
-  library(stringr)
-  library(anytime)
+  require(DBI)
+  require(rvest)
+  require(dplyr)
+  require(stringr)
+  require(anytime)
   
   # get page:
   base_url <- "https://arabic.rt.com"
@@ -3690,8 +3690,8 @@ logfile = "scrapelog.txt"
 
 catch_not_captured <- function(link, version, con){
  
-  library(DBI)
-  library(dplyr)
+  require(DBI)
+  require(dplyr)
   
   # main df:
   page_data <- tibble(
