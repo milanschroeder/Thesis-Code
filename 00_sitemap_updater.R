@@ -9,6 +9,7 @@ source("00_connect_DB_RT.R")
 # helper function to get time of last scrape #####
 get_lastscrape <- function(df, lastscrape_var = "last_scrape"){
   
+  require(dplyr)
   require(tidyverse)
   require(DBI)
   
@@ -47,6 +48,7 @@ DBI::dbWriteTable(conn = conn, name = "sitemap_versions", value = sitemap_versio
 # scrape base sitemaps for sub-sitemaps:
 scrape_base_sitemaps <- function(){
   
+  require(dplyr)
   require(tidyverse)
   require(rvest)
   require(DBI)
@@ -95,6 +97,7 @@ scrape_base_sitemaps <- function(){
 
 scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
   
+  require(dplyr)
   require(tidyverse)
   require(rvest)
   require(DBI)
