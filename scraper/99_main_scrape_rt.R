@@ -19,7 +19,7 @@ updated_sitemaps <- scrape_base_sitemaps()
 updated_sitemaps # inspect
 # scrape sitemaps ####
 updated_pages <- scrape_sitemaps()
-updated_pages %>% dplyr::count(version) # inspect
+try(updated_pages %>% dplyr::count(version)) # inspect
 
 rm(updated_pages) # faster/lighter to load filtered from DB
 
