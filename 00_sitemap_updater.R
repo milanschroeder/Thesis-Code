@@ -101,6 +101,7 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
   require(tidyverse)
   require(rvest)
   require(DBI)
+  require(stringr)
   
   
   # options: 1) scrape not only updated_sitemaps (default), 2) base_sitemaps from RT_DB ("all"), 3) individually specified df_linklist (with var $loc, $version)
@@ -141,7 +142,7 @@ scrape_sitemaps <- function(sitemaps_source = updated_sitemaps, sleeptime = .5){
       # get latinized version of RT Balkan as well:
         if (sitemaps_source$version[i] == "bk") {
           sitemaps_new <- dplyr::bind_rows(sitemaps_new, sitemap_tmp %>% 
-                                             mutate(loc = loc %>% str_replace("://", "://lat."),
+                                             mutate(loc = loc %>% stringr::str_replace("://", "://lat."),
                                                     version = "bk-lat"))
         }
        
