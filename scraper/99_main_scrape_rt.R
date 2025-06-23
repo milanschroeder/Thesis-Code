@@ -29,7 +29,10 @@ source("01_scrape_pages_rt.R")
 
 # scrape #####
 
-scrape_filter <- c("ru")  # select which scrapers to use (mainly for initial scrape)
+scrape_filter <- tbl(conn, "sitemap_versions") %>% 
+  pull(version)
+  # c("ru")  # select which scrapers to use (mainly for initial scrape)
+
 
 already_scraped <-
   tbl(conn, "page_data") %>% 
